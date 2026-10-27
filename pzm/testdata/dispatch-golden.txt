@@ -1,0 +1,1075 @@
+args "tidy"
+code 0
+out "ran tidy words=[] quiet=false roots=\"\" dry=false force=false\n"
+errs ""
+
+args "--tidy"
+code 0
+out "ran tidy words=[] quiet=false roots=\"\" dry=false force=false\n"
+errs ""
+
+args "-t"
+code 0
+out "ran tidy words=[] quiet=false roots=\"\" dry=false force=false\n"
+errs ""
+
+args "look" "a" "b"
+code 0
+out "ran look words=[\"a\" \"b\"] quiet=false roots=\"\" from=\"\"\n"
+errs ""
+
+args "--look" "a"
+code 0
+out "ran look words=[\"a\"] quiet=false roots=\"\" from=\"\"\n"
+errs ""
+
+args "-l" "a"
+code 0
+out "ran look words=[\"a\"] quiet=false roots=\"\" from=\"\"\n"
+errs ""
+
+args "plain" "x"
+code 0
+out "ran plain words=[\"x\"] quiet=false roots=\"\"\n"
+errs ""
+
+args "boom"
+code 1
+out ""
+errs "demo boom: boom\n"
+
+args "--boom"
+code 1
+out ""
+errs "demo boom: boom\n"
+
+args "-q" "look"
+code 0
+out "ran look words=[] quiet=true roots=\"\" from=\"\"\n"
+errs ""
+
+args "-r" "x" "look"
+code 0
+out "ran look words=[] quiet=false roots=\"x\" from=\"\"\n"
+errs ""
+
+args "-rx" "look"
+code 0
+out "ran look words=[] quiet=false roots=\"x\" from=\"\"\n"
+errs ""
+
+args "-r=x" "look"
+code 0
+out "ran look words=[] quiet=false roots=\"x\" from=\"\"\n"
+errs ""
+
+args "--roots" "x" "look"
+code 0
+out "ran look words=[] quiet=false roots=\"x\" from=\"\"\n"
+errs ""
+
+args "--roots=x" "look"
+code 0
+out "ran look words=[] quiet=false roots=\"x\" from=\"\"\n"
+errs ""
+
+args "--quiet" "look"
+code 0
+out "ran look words=[] quiet=true roots=\"\" from=\"\"\n"
+errs ""
+
+args "-q" "-r" "tidy" "look"
+code 0
+out "ran look words=[] quiet=true roots=\"tidy\" from=\"\"\n"
+errs ""
+
+args "-q" "-r" "x" "--look"
+code 0
+out "ran look words=[] quiet=true roots=\"x\" from=\"\"\n"
+errs ""
+
+args "--roots=x" "-q" "--look" "a"
+code 0
+out "ran look words=[\"a\"] quiet=true roots=\"x\" from=\"\"\n"
+errs ""
+
+args "-qr" "tidy" "look"
+code 0
+out "ran look words=[] quiet=true roots=\"tidy\" from=\"\"\n"
+errs ""
+
+args "-qr" "tidy" "--look"
+code 0
+out "ran look words=[] quiet=true roots=\"tidy\" from=\"\"\n"
+errs ""
+
+args "-qr" "tidy" "-l"
+code 0
+out "ran look words=[] quiet=true roots=\"tidy\" from=\"\"\n"
+errs ""
+
+args "-qrtidy" "look"
+code 0
+out "ran look words=[] quiet=true roots=\"tidy\" from=\"\"\n"
+errs ""
+
+args "-rtidy" "look"
+code 0
+out "ran look words=[] quiet=false roots=\"tidy\" from=\"\"\n"
+errs ""
+
+args "-qrx" "look" "w"
+code 0
+out "ran look words=[\"w\"] quiet=true roots=\"x\" from=\"\"\n"
+errs ""
+
+args "-qrx" "--look" "w"
+code 0
+out "ran look words=[\"w\"] quiet=true roots=\"x\" from=\"\"\n"
+errs ""
+
+args "-rx" "--look"
+code 0
+out "ran look words=[] quiet=false roots=\"x\" from=\"\"\n"
+errs ""
+
+args "-rx" "-l"
+code 0
+out "ran look words=[] quiet=false roots=\"x\" from=\"\"\n"
+errs ""
+
+args "-rx" "--tidy" "--dry-run"
+code 0
+out "ran tidy words=[] quiet=false roots=\"x\" dry=true force=false\n"
+errs ""
+
+args "-qr" "x" "tidy" "--dry-run" "--force"
+code 0
+out "ran tidy words=[] quiet=true roots=\"x\" dry=true force=true\n"
+errs ""
+
+args "-qr" "x" "nonsuch"
+code 2
+out ""
+errs "demo: there is no verb nonsuch\n"
+
+args "-qr" "tidy" "nonsuch"
+code 2
+out ""
+errs "demo: there is no verb nonsuch\n"
+
+args "-rtidy" "nonsuch"
+code 2
+out ""
+errs "demo: there is no verb nonsuch\n"
+
+args "-rtidy" "-qr" "look"
+code 2
+out ""
+errs "demo: invalid argument \"look\" for \"-r, --roots\" flag: it is given twice\n"
+
+args "-r" "look" "tidy"
+code 0
+out "ran tidy words=[] quiet=false roots=\"look\" dry=false force=false\n"
+errs ""
+
+args "-r" "--look" "tidy"
+code 0
+out "ran tidy words=[] quiet=false roots=\"--look\" dry=false force=false\n"
+errs ""
+
+args "-qr=tidy" "look"
+code 0
+out "ran look words=[] quiet=true roots=\"tidy\" from=\"\"\n"
+errs ""
+
+args "-rq" "look"
+code 0
+out "ran look words=[] quiet=false roots=\"q\" from=\"\"\n"
+errs ""
+
+args "-r==x" "look"
+code 0
+out "ran look words=[] quiet=false roots=\"=x\" from=\"\"\n"
+errs ""
+
+args "-qr"
+code 2
+out ""
+errs "demo: flag needs an argument: 'r' in -r\n"
+
+args "-q=yes" "look"
+code 2
+out ""
+errs "demo: invalid argument \"yes\" for \"-q, --quiet\" flag: a switch takes no value\n"
+
+args "-q=--quiet" "look"
+code 0
+out "ran look words=[] quiet=true roots=\"\" from=\"\"\n"
+errs ""
+
+args "-fr" "tidy" "look"
+code 2
+out ""
+errs "demo: -f is tidy's, not look's\n"
+
+args "-f" "-r" "tidy" "look"
+code 2
+out ""
+errs "demo: -f is tidy's, not look's\n"
+
+args "-qF" "tidy" "look"
+code 0
+out "ran look words=[] quiet=true roots=\"\" from=\"tidy\"\n"
+errs ""
+
+args "-F" "cy" "-qr" "tidy" "look"
+code 0
+out "ran look words=[] quiet=true roots=\"tidy\" from=\"cy\"\n"
+errs ""
+
+args "-qf" "tidy"
+code 0
+out "ran tidy words=[] quiet=true roots=\"\" dry=false force=true\n"
+errs ""
+
+args "-f" "tidy"
+code 0
+out "ran tidy words=[] quiet=false roots=\"\" dry=false force=true\n"
+errs ""
+
+args "--force" "tidy"
+code 0
+out "ran tidy words=[] quiet=false roots=\"\" dry=false force=true\n"
+errs ""
+
+args "--force" "look"
+code 2
+out ""
+errs "demo: --force is tidy's, not look's\n"
+
+args "-f" "look"
+code 2
+out ""
+errs "demo: -f is tidy's, not look's\n"
+
+args "-fq" "look"
+code 2
+out ""
+errs "demo: -f is tidy's, not look's\n"
+
+args "-qf" "plain"
+code 2
+out ""
+errs "demo: -f is tidy's, not plain's\n"
+
+args "-Fcy" "look"
+code 0
+out "ran look words=[] quiet=false roots=\"\" from=\"cy\"\n"
+errs ""
+
+args "-F=cy" "look"
+code 0
+out "ran look words=[] quiet=false roots=\"\" from=\"cy\"\n"
+errs ""
+
+args "--from" "cy" "look"
+code 0
+out "ran look words=[] quiet=false roots=\"\" from=\"cy\"\n"
+errs ""
+
+args "--from=cy" "look"
+code 0
+out "ran look words=[] quiet=false roots=\"\" from=\"cy\"\n"
+errs ""
+
+args "--from" "tidy" "look"
+code 0
+out "ran look words=[] quiet=false roots=\"\" from=\"tidy\"\n"
+errs ""
+
+args "--from" "tidy" "tidy"
+code 2
+out ""
+errs "demo: --from is look's, not tidy's\n"
+
+args "-F" "tidy" "--look"
+code 0
+out "ran look words=[] quiet=false roots=\"\" from=\"tidy\"\n"
+errs ""
+
+args "-F" "look" "-l"
+code 0
+out "ran look words=[] quiet=false roots=\"\" from=\"look\"\n"
+errs ""
+
+args "-f" "-F" "x" "look"
+code 2
+out ""
+errs "demo: -f is tidy's, not look's\n"
+
+args "-fF" "x" "look"
+code 2
+out ""
+errs "demo: -f is tidy's, not look's\n"
+
+args "-ft" "look"
+code 0
+out "ran tidy words=[\"look\"] quiet=false roots=\"\" dry=false force=true\n"
+errs ""
+
+args "-fl" "look"
+code 2
+out ""
+errs "demo: -f is tidy's, not look's\n"
+
+args "-lf" "look"
+code 2
+out ""
+errs "demo: -f is tidy's, not look's\n"
+
+args "-lf" "tidy"
+code 2
+out ""
+errs "demo: -f is tidy's, not look's\n"
+
+args "-ql" "a"
+code 0
+out "ran look words=[\"a\"] quiet=true roots=\"\" from=\"\"\n"
+errs ""
+
+args "-lq" "a"
+code 0
+out "ran look words=[\"a\"] quiet=true roots=\"\" from=\"\"\n"
+errs ""
+
+args "-lqr" "x" "a"
+code 0
+out "ran look words=[\"a\"] quiet=true roots=\"x\" from=\"\"\n"
+errs ""
+
+args "-lF" "cy" "a"
+code 0
+out "ran look words=[\"a\"] quiet=false roots=\"\" from=\"cy\"\n"
+errs ""
+
+args "-lqF" "cy"
+code 0
+out "ran look words=[] quiet=true roots=\"\" from=\"cy\"\n"
+errs ""
+
+args "-qlr" "x"
+code 0
+out "ran look words=[] quiet=true roots=\"x\" from=\"\"\n"
+errs ""
+
+args "-lf"
+code 2
+out ""
+errs "demo: -f is tidy's, not look's\n"
+
+args "-f"
+code 2
+out ""
+errs "demo: -f is a flag of a verb, and no verb comes after it\n"
+
+args "-F"
+code 2
+out ""
+errs "demo: -F is a flag of a verb, and no verb comes after it\n"
+
+args "-fq"
+code 2
+out ""
+errs "demo: -f is a flag of a verb, and no verb comes after it\n"
+
+args "-f" "--"
+code 2
+out ""
+errs "demo: -f is a flag of a verb, and -- comes before any verb: a verb's flags come after it\n"
+
+args "-f" "--help"
+code 2
+out ""
+errs "demo: -f is a flag of a verb, and --help comes before any verb: a verb's flags come after it\n"
+
+args "-f" "nonsuch"
+code 2
+out ""
+errs "demo: -f is a flag of a verb, and nonsuch is no verb: a verb's flags come after it\n"
+
+args "-fr" "x" "help" "look"
+code 2
+out ""
+errs "demo: -f is a flag of a verb, and help is no verb: a verb's flags come after it\n"
+
+args "--dry-run" "tidy"
+code 0
+out "ran tidy words=[] quiet=false roots=\"\" dry=true force=false\n"
+errs ""
+
+args "--dry-run" "look"
+code 2
+out ""
+errs "demo: --dry-run is tidy's, not look's\n"
+
+args "-r" "x" "--dry-run" "tidy"
+code 0
+out "ran tidy words=[] quiet=false roots=\"x\" dry=true force=false\n"
+errs ""
+
+args "-qh" "tidy"
+code 0
+out "demo tidy [ARGS]: takes away what is old\nthe same as demo --tidy or demo -t\n  --force, -f    does not ask\n  --dry-run      asks the verb to say what it would do, and do none of it\nand for every verb:\n  --quiet, -q          says less\n  --roots, -r VALUE    where the roots are\n"
+errs ""
+
+args "-fh" "tidy"
+code 0
+out "demo tidy [ARGS]: takes away what is old\nthe same as demo --tidy or demo -t\n  --force, -f    does not ask\n  --dry-run      asks the verb to say what it would do, and do none of it\nand for every verb:\n  --quiet, -q          says less\n  --roots, -r VALUE    where the roots are\n"
+errs ""
+
+args "-hq" "tidy"
+code 0
+out "demo tidy [ARGS]: takes away what is old\nthe same as demo --tidy or demo -t\n  --force, -f    does not ask\n  --dry-run      asks the verb to say what it would do, and do none of it\nand for every verb:\n  --quiet, -q          says less\n  --roots, -r VALUE    where the roots are\n"
+errs ""
+
+args "--bogus=x" "tidy"
+code 2
+out ""
+errs "demo: unknown flag: --bogus\n"
+
+args "--look=x" "tidy"
+code 2
+out ""
+errs "demo: unknown flag: --look\n"
+
+args "-l=x" "a"
+code 2
+out ""
+errs "demo: invalid argument \"x\" for \"-l, --look\" flag: strconv.ParseBool: parsing \"x\": invalid syntax\n"
+
+args "-l=true" "a"
+code 2
+out ""
+errs "demo: --look comes first: demo --look [ARGS]\n"
+
+args "-lt=x"
+code 2
+out ""
+errs "demo: invalid argument \"x\" for \"-t, --tidy\" flag: strconv.ParseBool: parsing \"x\": invalid syntax\n"
+
+args "-q" "-F"
+code 2
+out ""
+errs "demo: -F is a flag of a verb, and no verb comes after it\n"
+
+args "--roots"
+code 2
+out ""
+errs "demo: flag needs an argument: --roots\n"
+
+args "--from"
+code 2
+out ""
+errs "demo: --from is a flag of a verb, and no verb comes after it\n"
+
+args "-f" "--roots"
+code 2
+out ""
+errs "demo: -f is a flag of a verb, and --roots comes before any verb: a verb's flags come after it\n"
+
+args "-f" "-r"
+code 2
+out ""
+errs "demo: -f is a flag of a verb, and -r comes before any verb: a verb's flags come after it\n"
+
+args "-f=x" "tidy"
+code 2
+out ""
+errs "demo: invalid argument \"x\" for \"-f, --force\" flag: a switch takes no value\n"
+
+args "-qf=--force" "tidy"
+code 0
+out "ran tidy words=[] quiet=true roots=\"\" dry=false force=true\n"
+errs ""
+
+args "--force=yes" "tidy"
+code 2
+out ""
+errs "demo: invalid argument \"yes\" for \"-f, --force\" flag: a switch takes no value\n"
+
+args "--force=--force" "tidy"
+code 0
+out "ran tidy words=[] quiet=false roots=\"\" dry=false force=true\n"
+errs ""
+
+args "-f" "--help" "tidy"
+code 2
+out ""
+errs "demo: -f is a flag of a verb, and --help comes before any verb: a verb's flags come after it\n"
+
+args "-f" "--" "tidy"
+code 2
+out ""
+errs "demo: -f is a flag of a verb, and -- comes before any verb: a verb's flags come after it\n"
+
+args "-" "tidy"
+code 0
+out "ran tidy words=[\"-\"] quiet=false roots=\"\" dry=false force=false\n"
+errs ""
+
+args "-" "-fr" "tidy" "look"
+code 2
+out ""
+errs "demo: -f is tidy's, not look's\n"
+
+args "-" "-f" "-r" "tidy" "look"
+code 2
+out ""
+errs "demo: -f is tidy's, not look's\n"
+
+args "-" "-qF" "tidy" "look"
+code 0
+out "ran look words=[\"-\"] quiet=true roots=\"\" from=\"tidy\"\n"
+errs ""
+
+args "-" "-ql" "a"
+code 0
+out "ran look words=[\"-\" \"a\"] quiet=true roots=\"\" from=\"\"\n"
+errs ""
+
+args "-" "--look" "a"
+code 0
+out "ran look words=[\"-\" \"a\"] quiet=false roots=\"\" from=\"\"\n"
+errs ""
+
+args "-q" "-" "-l" "a"
+code 0
+out "ran look words=[\"-\" \"a\"] quiet=true roots=\"\" from=\"\"\n"
+errs ""
+
+args "-f" "-" "look"
+code 2
+out ""
+errs "demo: -f is tidy's, not look's\n"
+
+args "-f" "-" "tidy"
+code 0
+out "ran tidy words=[\"-\"] quiet=false roots=\"\" dry=false force=true\n"
+errs ""
+
+args "-r" "-" "look"
+code 0
+out "ran look words=[] quiet=false roots=\"-\" from=\"\"\n"
+errs ""
+
+args "-" "nonsuch"
+code 2
+out ""
+errs "demo: there is no verb nonsuch\n"
+
+args "-" "--help"
+code 0
+out "demo: a tool for testing dispatch\n\n  tidy     -t   takes away what is old\n  look     -l   looks\n  plain    -p   takes no flags\n  boom          fails\n\nfor every verb:\n  --quiet, -q          says less\n  --roots, -r VALUE    where the roots are\n\ndemo VERB [ARGS], or demo --VERB [ARGS]\n--help for this, --agent-help for the same, for an agent\n--age and --who for which build this is, and who made it\n"
+errs ""
+
+args "-"
+code 2
+out ""
+errs "demo: there is no verb -\n"
+
+args "-" "-"
+code 2
+out ""
+errs "demo: there is no verb -\n"
+
+args "-" "-f"
+code 2
+out ""
+errs "demo: -f is a flag of a verb, and no verb comes after it\n"
+
+args "-qr" "tidy" "--force" "look"
+code 2
+out ""
+errs "demo: --force is tidy's, not look's\n"
+
+args "-qr" "tidy" "-z" "look"
+code 2
+out ""
+errs "demo: unknown shorthand flag: 'z' in -z\n"
+
+args "-qr" "tidy" "-ql" "look"
+code 2
+out ""
+errs "demo: invalid argument \"--quiet\" for \"-q, --quiet\" flag: it is given twice\n"
+
+args "-qr" "tidy" "-lt"
+code 2
+out ""
+errs "demo: one verb at a time\n"
+
+args "-r" "x" "--from=y" "look"
+code 0
+out "ran look words=[] quiet=false roots=\"x\" from=\"y\"\n"
+errs ""
+
+args "look" "-qr" "x" "w"
+code 0
+out "ran look words=[\"w\"] quiet=true roots=\"x\" from=\"\"\n"
+errs ""
+
+args "look" "w" "-r" "x"
+code 0
+out "ran look words=[\"w\"] quiet=false roots=\"x\" from=\"\"\n"
+errs ""
+
+args "tidy" "-fq" "--dry-run" "w"
+code 0
+out "ran tidy words=[\"w\"] quiet=true roots=\"\" dry=true force=true\n"
+errs ""
+
+args "tidy" "--dry-run" "--force"
+code 0
+out "ran tidy words=[] quiet=false roots=\"\" dry=true force=true\n"
+errs ""
+
+args "look" "--from" "there"
+code 0
+out "ran look words=[] quiet=false roots=\"\" from=\"there\"\n"
+errs ""
+
+args "look" "-Fthere" "w"
+code 0
+out "ran look words=[\"w\"] quiet=false roots=\"\" from=\"there\"\n"
+errs ""
+
+args "look" "--" "-q" "w"
+code 0
+out "ran look words=[\"-q\" \"w\"] quiet=false roots=\"\" from=\"\"\n"
+errs ""
+
+args "--" "look"
+code 2
+out ""
+errs "demo: there is no verb look\n"
+
+args "-q" "--" "look"
+code 2
+out ""
+errs "demo: there is no verb look\n"
+
+args "-r" "--" "look"
+code 0
+out "ran look words=[] quiet=false roots=\"--\" from=\"\"\n"
+errs ""
+
+args "look" "-q" "--" "-r" "x"
+code 0
+out "ran look words=[\"-r\" \"x\"] quiet=true roots=\"\" from=\"\"\n"
+errs ""
+
+args ""
+code 2
+out ""
+errs "demo: there is no verb \n"
+
+args "nonsuch"
+code 2
+out ""
+errs "demo: there is no verb nonsuch\n"
+
+args "nonsuch" "look"
+code 2
+out ""
+errs "demo: there is no verb nonsuch\n"
+
+args "-q"
+code 2
+out ""
+errs "demo: --quiet given, and no verb: a verb comes after them\n"
+
+args "-r" "x"
+code 2
+out ""
+errs "demo: --roots given, and no verb: a verb comes after them\n"
+
+args "-r"
+code 2
+out ""
+errs "demo: flag needs an argument: 'r' in -r\n"
+
+args "-q" "nonsuch"
+code 2
+out ""
+errs "demo: there is no verb nonsuch\n"
+
+args "-rx"
+code 2
+out ""
+errs "demo: --roots given, and no verb: a verb comes after them\n"
+
+args "look" "--bogus"
+code 2
+out ""
+errs "demo: unknown flag: --bogus\n"
+
+args "look" "-z"
+code 2
+out ""
+errs "demo: unknown shorthand flag: 'z' in -z\n"
+
+args "--bogus" "look"
+code 2
+out ""
+errs "demo: unknown flag: --bogus\n"
+
+args "-z" "look"
+code 2
+out ""
+errs "demo: unknown shorthand flag: 'z' in -z\n"
+
+args "-qz" "look"
+code 2
+out ""
+errs "demo: unknown shorthand flag: 'z' in -z\n"
+
+args "look" "--quiet=yes"
+code 2
+out ""
+errs "demo: invalid argument \"yes\" for \"-q, --quiet\" flag: a switch takes no value\n"
+
+args "--quiet=yes" "look"
+code 2
+out ""
+errs "demo: invalid argument \"yes\" for \"-q, --quiet\" flag: a switch takes no value\n"
+
+args "tidy" "--dry-run=yes"
+code 2
+out ""
+errs "demo: invalid argument \"yes\" for \"--dry-run\" flag: a switch takes no value\n"
+
+args "look" "--dry-run"
+code 2
+out ""
+errs "demo: unknown flag: --dry-run\n"
+
+args "x" "--look"
+code 2
+out ""
+errs "demo: --look comes first: demo --look [ARGS]\n"
+
+args "look" "--tidy"
+code 2
+out ""
+errs "demo: unknown flag: --tidy\n"
+
+args "--look" "--tidy"
+code 2
+out ""
+errs "demo: unknown flag: --tidy\n"
+
+args "--look" "-t"
+code 2
+out ""
+errs "demo: unknown shorthand flag: 't' in -t\n"
+
+args "-lt"
+code 2
+out ""
+errs "demo: one verb at a time\n"
+
+args "-ql"
+code 0
+out "ran look words=[] quiet=true roots=\"\" from=\"\"\n"
+errs ""
+
+args "-q" "-l"
+code 0
+out "ran look words=[] quiet=true roots=\"\" from=\"\"\n"
+errs ""
+
+args "-q" "-lt"
+code 2
+out ""
+errs "demo: one verb at a time\n"
+
+args "-l" "-t"
+code 2
+out ""
+errs "demo: unknown shorthand flag: 't' in -t\n"
+
+args "--look" "--look"
+code 2
+out ""
+errs "demo: unknown flag: --look\n"
+
+args "--help"
+code 0
+out "demo: a tool for testing dispatch\n\n  tidy     -t   takes away what is old\n  look     -l   looks\n  plain    -p   takes no flags\n  boom          fails\n\nfor every verb:\n  --quiet, -q          says less\n  --roots, -r VALUE    where the roots are\n\ndemo VERB [ARGS], or demo --VERB [ARGS]\n--help for this, --agent-help for the same, for an agent\n--age and --who for which build this is, and who made it\n"
+errs ""
+
+args "-h"
+code 0
+out "demo: a tool for testing dispatch\n\n  tidy     -t   takes away what is old\n  look     -l   looks\n  plain    -p   takes no flags\n  boom          fails\n\nfor every verb:\n  --quiet, -q          says less\n  --roots, -r VALUE    where the roots are\n\ndemo VERB [ARGS], or demo --VERB [ARGS]\n--help for this, --agent-help for the same, for an agent\n--age and --who for which build this is, and who made it\n"
+errs ""
+
+args "help"
+code 0
+out "demo: a tool for testing dispatch\n\n  tidy     -t   takes away what is old\n  look     -l   looks\n  plain    -p   takes no flags\n  boom          fails\n\nfor every verb:\n  --quiet, -q          says less\n  --roots, -r VALUE    where the roots are\n\ndemo VERB [ARGS], or demo --VERB [ARGS]\n--help for this, --agent-help for the same, for an agent\n--age and --who for which build this is, and who made it\n"
+errs ""
+
+args "help" "look"
+code 0
+out "demo look [ARGS]: looks\nthe same as demo --look or demo -l\n  --from, -F VALUE    where from\nand for every verb:\n  --quiet, -q          says less\n  --roots, -r VALUE    where the roots are\n"
+errs ""
+
+args "help" "nonsuch"
+code 0
+out "demo: a tool for testing dispatch\n\n  tidy     -t   takes away what is old\n  look     -l   looks\n  plain    -p   takes no flags\n  boom          fails\n\nfor every verb:\n  --quiet, -q          says less\n  --roots, -r VALUE    where the roots are\n\ndemo VERB [ARGS], or demo --VERB [ARGS]\n--help for this, --agent-help for the same, for an agent\n--age and --who for which build this is, and who made it\n"
+errs ""
+
+args "look" "--help"
+code 0
+out "demo look [ARGS]: looks\nthe same as demo --look or demo -l\n  --from, -F VALUE    where from\nand for every verb:\n  --quiet, -q          says less\n  --roots, -r VALUE    where the roots are\n"
+errs ""
+
+args "look" "-h"
+code 0
+out "demo look [ARGS]: looks\nthe same as demo --look or demo -l\n  --from, -F VALUE    where from\nand for every verb:\n  --quiet, -q          says less\n  --roots, -r VALUE    where the roots are\n"
+errs ""
+
+args "--look" "--help"
+code 0
+out "demo look [ARGS]: looks\nthe same as demo --look or demo -l\n  --from, -F VALUE    where from\nand for every verb:\n  --quiet, -q          says less\n  --roots, -r VALUE    where the roots are\n"
+errs ""
+
+args "-q" "look" "--help"
+code 0
+out "demo look [ARGS]: looks\nthe same as demo --look or demo -l\n  --from, -F VALUE    where from\nand for every verb:\n  --quiet, -q          says less\n  --roots, -r VALUE    where the roots are\n"
+errs ""
+
+args "-qr" "x" "look" "--help"
+code 0
+out "demo look [ARGS]: looks\nthe same as demo --look or demo -l\n  --from, -F VALUE    where from\nand for every verb:\n  --quiet, -q          says less\n  --roots, -r VALUE    where the roots are\n"
+errs ""
+
+args "--help" "look"
+code 0
+out "demo: a tool for testing dispatch\n\n  tidy     -t   takes away what is old\n  look     -l   looks\n  plain    -p   takes no flags\n  boom          fails\n\nfor every verb:\n  --quiet, -q          says less\n  --roots, -r VALUE    where the roots are\n\ndemo VERB [ARGS], or demo --VERB [ARGS]\n--help for this, --agent-help for the same, for an agent\n--age and --who for which build this is, and who made it\n"
+errs ""
+
+args "-h" "look"
+code 0
+out "demo: a tool for testing dispatch\n\n  tidy     -t   takes away what is old\n  look     -l   looks\n  plain    -p   takes no flags\n  boom          fails\n\nfor every verb:\n  --quiet, -q          says less\n  --roots, -r VALUE    where the roots are\n\ndemo VERB [ARGS], or demo --VERB [ARGS]\n--help for this, --agent-help for the same, for an agent\n--age and --who for which build this is, and who made it\n"
+errs ""
+
+args "-q" "--help" "look"
+code 0
+out "demo: a tool for testing dispatch\n\n  tidy     -t   takes away what is old\n  look     -l   looks\n  plain    -p   takes no flags\n  boom          fails\n\nfor every verb:\n  --quiet, -q          says less\n  --roots, -r VALUE    where the roots are\n\ndemo VERB [ARGS], or demo --VERB [ARGS]\n--help for this, --agent-help for the same, for an agent\n--age and --who for which build this is, and who made it\n"
+errs ""
+
+args "tidy" "--help"
+code 0
+out "demo tidy [ARGS]: takes away what is old\nthe same as demo --tidy or demo -t\n  --force, -f    does not ask\n  --dry-run      asks the verb to say what it would do, and do none of it\nand for every verb:\n  --quiet, -q          says less\n  --roots, -r VALUE    where the roots are\n"
+errs ""
+
+args "--agent-help"
+code 0
+out "tool demo: a tool for testing dispatch\nflag --quiet, -q: says less\nflag --roots, -r VALUE: where the roots are\nverb tidy -t: takes away what is old\nfacts tidy: writes its state directory; may delete what is there; stays on this machine; needs no one; light on the machine\nflag tidy --force, -f: does not ask\nflag tidy --dry-run: asks the verb to say what it would do, and do none of it\nverb look -l: looks\nfacts look: writes nothing; leaves what is there; stays on this machine; needs no one; light on the machine\nflag look --from, -F VALUE: where from\nverb plain -p: takes no flags\nfacts plain: writes nothing; leaves what is there; stays on this machine; needs no one; light on the machine\nverb boom: fails\nfacts boom: writes nothing; leaves what is there; stays on this machine; needs no one; light on the machine\nverb age: which commit this is, and how long ago it was made\nfacts age: writes nothing; leaves what is there; stays on this machine; needs no one; light on the machine\nverb who: who built this, and the sessions behind it\nfacts who: writes nothing; leaves what is there; stays on this machine; needs no one; light on the machine\ncall demo VERB [ARGS] or demo --VERB [ARGS]; exit 0 ran, 1 the verb failed, 2 nothing ran\n"
+errs ""
+
+args "--agent-help" "look"
+code 2
+out ""
+errs "demo: unknown flag: --agent-help\n"
+
+args "look" "--agent-help"
+code 2
+out ""
+errs "demo: unknown flag: --agent-help\n"
+
+args "--agent-help" "--look"
+code 2
+out ""
+errs "demo: one verb at a time\n"
+
+args "--agent-help" "--age"
+code 2
+out ""
+errs "demo: one verb at a time\n"
+
+args "--age" "--who"
+code 2
+out ""
+errs "demo: unknown flag: --who\n"
+
+args "--age" "extra"
+code 0
+out "demo, built by go rather than by game: no commit and no commit time in it\n"
+errs ""
+
+args "age"
+code 0
+out "demo, built by go rather than by game: no commit and no commit time in it\n"
+errs ""
+
+args "--who" "-q"
+code 0
+out "demo is not signed\ndemo was built by go rather than by game: no builder and no sessions in it\nno signer is set: no key is vouched for; add a signer line to /pzm-tests-have-no-home/.config/demo/config\n"
+errs ""
+
+args "-q" "--age"
+code 0
+out "demo, built by go rather than by game: no commit and no commit time in it\n"
+errs ""
+
+args "-qr" "x" "--age"
+code 0
+out "demo, built by go rather than by game: no commit and no commit time in it\n"
+errs ""
+
+args "-qr" "x" "--agent-help"
+code 0
+out "tool demo: a tool for testing dispatch\nflag --quiet, -q: says less\nflag --roots, -r VALUE: where the roots are\nverb tidy -t: takes away what is old\nfacts tidy: writes its state directory; may delete what is there; stays on this machine; needs no one; light on the machine\nflag tidy --force, -f: does not ask\nflag tidy --dry-run: asks the verb to say what it would do, and do none of it\nverb look -l: looks\nfacts look: writes nothing; leaves what is there; stays on this machine; needs no one; light on the machine\nflag look --from, -F VALUE: where from\nverb plain -p: takes no flags\nfacts plain: writes nothing; leaves what is there; stays on this machine; needs no one; light on the machine\nverb boom: fails\nfacts boom: writes nothing; leaves what is there; stays on this machine; needs no one; light on the machine\nverb age: which commit this is, and how long ago it was made\nfacts age: writes nothing; leaves what is there; stays on this machine; needs no one; light on the machine\nverb who: who built this, and the sessions behind it\nfacts who: writes nothing; leaves what is there; stays on this machine; needs no one; light on the machine\ncall demo VERB [ARGS] or demo --VERB [ARGS]; exit 0 ran, 1 the verb failed, 2 nothing ran\n"
+errs ""
+
+args "-q" "--agent-help"
+code 0
+out "tool demo: a tool for testing dispatch\nflag --quiet, -q: says less\nflag --roots, -r VALUE: where the roots are\nverb tidy -t: takes away what is old\nfacts tidy: writes its state directory; may delete what is there; stays on this machine; needs no one; light on the machine\nflag tidy --force, -f: does not ask\nflag tidy --dry-run: asks the verb to say what it would do, and do none of it\nverb look -l: looks\nfacts look: writes nothing; leaves what is there; stays on this machine; needs no one; light on the machine\nflag look --from, -F VALUE: where from\nverb plain -p: takes no flags\nfacts plain: writes nothing; leaves what is there; stays on this machine; needs no one; light on the machine\nverb boom: fails\nfacts boom: writes nothing; leaves what is there; stays on this machine; needs no one; light on the machine\nverb age: which commit this is, and how long ago it was made\nfacts age: writes nothing; leaves what is there; stays on this machine; needs no one; light on the machine\nverb who: who built this, and the sessions behind it\nfacts who: writes nothing; leaves what is there; stays on this machine; needs no one; light on the machine\ncall demo VERB [ARGS] or demo --VERB [ARGS]; exit 0 ran, 1 the verb failed, 2 nothing ran\n"
+errs ""
+
+args "-r" "x" "--agent-help"
+code 0
+out "tool demo: a tool for testing dispatch\nflag --quiet, -q: says less\nflag --roots, -r VALUE: where the roots are\nverb tidy -t: takes away what is old\nfacts tidy: writes its state directory; may delete what is there; stays on this machine; needs no one; light on the machine\nflag tidy --force, -f: does not ask\nflag tidy --dry-run: asks the verb to say what it would do, and do none of it\nverb look -l: looks\nfacts look: writes nothing; leaves what is there; stays on this machine; needs no one; light on the machine\nflag look --from, -F VALUE: where from\nverb plain -p: takes no flags\nfacts plain: writes nothing; leaves what is there; stays on this machine; needs no one; light on the machine\nverb boom: fails\nfacts boom: writes nothing; leaves what is there; stays on this machine; needs no one; light on the machine\nverb age: which commit this is, and how long ago it was made\nfacts age: writes nothing; leaves what is there; stays on this machine; needs no one; light on the machine\nverb who: who built this, and the sessions behind it\nfacts who: writes nothing; leaves what is there; stays on this machine; needs no one; light on the machine\ncall demo VERB [ARGS] or demo --VERB [ARGS]; exit 0 ran, 1 the verb failed, 2 nothing ran\n"
+errs ""
+
+args "--agent-help" "-q"
+code 0
+out "tool demo: a tool for testing dispatch\nflag --quiet, -q: says less\nflag --roots, -r VALUE: where the roots are\nverb tidy -t: takes away what is old\nfacts tidy: writes its state directory; may delete what is there; stays on this machine; needs no one; light on the machine\nflag tidy --force, -f: does not ask\nflag tidy --dry-run: asks the verb to say what it would do, and do none of it\nverb look -l: looks\nfacts look: writes nothing; leaves what is there; stays on this machine; needs no one; light on the machine\nflag look --from, -F VALUE: where from\nverb plain -p: takes no flags\nfacts plain: writes nothing; leaves what is there; stays on this machine; needs no one; light on the machine\nverb boom: fails\nfacts boom: writes nothing; leaves what is there; stays on this machine; needs no one; light on the machine\nverb age: which commit this is, and how long ago it was made\nfacts age: writes nothing; leaves what is there; stays on this machine; needs no one; light on the machine\nverb who: who built this, and the sessions behind it\nfacts who: writes nothing; leaves what is there; stays on this machine; needs no one; light on the machine\ncall demo VERB [ARGS] or demo --VERB [ARGS]; exit 0 ran, 1 the verb failed, 2 nothing ran\n"
+errs ""
+
+args "-q" "--age" "-q"
+code 2
+out ""
+errs "demo: invalid argument \"--quiet\" for \"-q, --quiet\" flag: it is given twice\n"
+
+args "__complete" "look" ""
+code 0
+out ":0\n"
+errs "Completion ended with directive: ShellCompDirectiveDefault\n"
+
+args "completion"
+code 2
+out ""
+errs "demo: there is no verb completion\n"
+
+args "completion" "bash"
+code 2
+out ""
+errs "demo: there is no verb completion\n"
+
+args "tidy" "-h"
+code 0
+out "demo tidy [ARGS]: takes away what is old\nthe same as demo --tidy or demo -t\n  --force, -f    does not ask\n  --dry-run      asks the verb to say what it would do, and do none of it\nand for every verb:\n  --quiet, -q          says less\n  --roots, -r VALUE    where the roots are\n"
+errs ""
+
+args "plain" "--help"
+code 0
+out "demo plain [ARGS]: takes no flags\nthe same as demo --plain or demo -p\nand for every verb:\n  --quiet, -q          says less\n  --roots, -r VALUE    where the roots are\n"
+errs ""
+
+args "plain" "-h"
+code 0
+out "demo plain [ARGS]: takes no flags\nthe same as demo --plain or demo -p\nand for every verb:\n  --quiet, -q          says less\n  --roots, -r VALUE    where the roots are\n"
+errs ""
+
+args "boom" "--help"
+code 0
+out "demo boom [ARGS]: fails\nthe same as demo --boom\nand for every verb:\n  --quiet, -q          says less\n  --roots, -r VALUE    where the roots are\n"
+errs ""
+
+args "age" "--help"
+code 0
+out "demo age [ARGS]: which commit this is, and how long ago it was made\nthe same as demo --age\nand for every verb:\n  --quiet, -q          says less\n  --roots, -r VALUE    where the roots are\n"
+errs ""
+
+args "who" "-h"
+code 0
+out "demo who [ARGS]: who built this, and the sessions behind it\nthe same as demo --who\nand for every verb:\n  --quiet, -q          says less\n  --roots, -r VALUE    where the roots are\n"
+errs ""
+
+args "--age" "--help"
+code 0
+out "demo age [ARGS]: which commit this is, and how long ago it was made\nthe same as demo --age\nand for every verb:\n  --quiet, -q          says less\n  --roots, -r VALUE    where the roots are\n"
+errs ""
+
+args "help" "tidy"
+code 0
+out "demo tidy [ARGS]: takes away what is old\nthe same as demo --tidy or demo -t\n  --force, -f    does not ask\n  --dry-run      asks the verb to say what it would do, and do none of it\nand for every verb:\n  --quiet, -q          says less\n  --roots, -r VALUE    where the roots are\n"
+errs ""
+
+args "help" "plain"
+code 0
+out "demo plain [ARGS]: takes no flags\nthe same as demo --plain or demo -p\nand for every verb:\n  --quiet, -q          says less\n  --roots, -r VALUE    where the roots are\n"
+errs ""
+
+args "help" "boom"
+code 0
+out "demo boom [ARGS]: fails\nthe same as demo --boom\nand for every verb:\n  --quiet, -q          says less\n  --roots, -r VALUE    where the roots are\n"
+errs ""
+
+args "help" "age"
+code 0
+out "demo age [ARGS]: which commit this is, and how long ago it was made\nthe same as demo --age\nand for every verb:\n  --quiet, -q          says less\n  --roots, -r VALUE    where the roots are\n"
+errs ""
+
+args "help" "who"
+code 0
+out "demo who [ARGS]: who built this, and the sessions behind it\nthe same as demo --who\nand for every verb:\n  --quiet, -q          says less\n  --roots, -r VALUE    where the roots are\n"
+errs ""
+
+args "help" "help"
+code 0
+out "demo: a tool for testing dispatch\n\n  tidy     -t   takes away what is old\n  look     -l   looks\n  plain    -p   takes no flags\n  boom          fails\n\nfor every verb:\n  --quiet, -q          says less\n  --roots, -r VALUE    where the roots are\n\ndemo VERB [ARGS], or demo --VERB [ARGS]\n--help for this, --agent-help for the same, for an agent\n--age and --who for which build this is, and who made it\n"
+errs ""
+
+args "-t" "--help"
+code 0
+out "demo tidy [ARGS]: takes away what is old\nthe same as demo --tidy or demo -t\n  --force, -f    does not ask\n  --dry-run      asks the verb to say what it would do, and do none of it\nand for every verb:\n  --quiet, -q          says less\n  --roots, -r VALUE    where the roots are\n"
+errs ""
+
+args "--tidy" "-h"
+code 0
+out "demo tidy [ARGS]: takes away what is old\nthe same as demo --tidy or demo -t\n  --force, -f    does not ask\n  --dry-run      asks the verb to say what it would do, and do none of it\nand for every verb:\n  --quiet, -q          says less\n  --roots, -r VALUE    where the roots are\n"
+errs ""
+
+args "-p" "--help"
+code 0
+out "demo plain [ARGS]: takes no flags\nthe same as demo --plain or demo -p\nand for every verb:\n  --quiet, -q          says less\n  --roots, -r VALUE    where the roots are\n"
+errs ""
+
+args "-q" "tidy" "--help"
+code 0
+out "demo tidy [ARGS]: takes away what is old\nthe same as demo --tidy or demo -t\n  --force, -f    does not ask\n  --dry-run      asks the verb to say what it would do, and do none of it\nand for every verb:\n  --quiet, -q          says less\n  --roots, -r VALUE    where the roots are\n"
+errs ""
+
+args "-r" "x" "plain" "-h"
+code 0
+out "demo plain [ARGS]: takes no flags\nthe same as demo --plain or demo -p\nand for every verb:\n  --quiet, -q          says less\n  --roots, -r VALUE    where the roots are\n"
+errs ""
+
+args "look" "--help" "extra"
+code 0
+out "demo look [ARGS]: looks\nthe same as demo --look or demo -l\n  --from, -F VALUE    where from\nand for every verb:\n  --quiet, -q          says less\n  --roots, -r VALUE    where the roots are\n"
+errs ""
+
+args "help" "look" "extra"
+code 0
+out "demo look [ARGS]: looks\nthe same as demo --look or demo -l\n  --from, -F VALUE    where from\nand for every verb:\n  --quiet, -q          says less\n  --roots, -r VALUE    where the roots are\n"
+errs ""
+
+args "help" "--agent-help"
+code 2
+out ""
+errs "demo: unknown flag: --agent-help\n"
+

@@ -1,0 +1,100 @@
+args "hello" "-n" "ada"
+code 0
+out "ran hello words=[] name=\"ada\" number=\"\"\n"
+errs ""
+
+args "count" "-n" "5"
+code 0
+out "ran count words=[] number=\"5\"\n"
+errs ""
+
+args "-n" "ada" "hello"
+code 2
+out ""
+errs "hi: -n is not the same flag to every verb: put it after the verb\n"
+
+args "-n" "5" "count"
+code 2
+out ""
+errs "hi: -n is not the same flag to every verb: put it after the verb\n"
+
+args "-n" "5" "hello"
+code 2
+out ""
+errs "hi: -n is not the same flag to every verb: put it after the verb\n"
+
+args "-nada" "hello"
+code 2
+out ""
+errs "hi: -n is not the same flag to every verb: put it after the verb\n"
+
+args "-n=ada" "hello"
+code 2
+out ""
+errs "hi: -n is not the same flag to every verb: put it after the verb\n"
+
+args "-qn" "hello"
+code 2
+out ""
+errs "hi: unknown shorthand flag: 'q' in -qn\n"
+
+args "-u" "5" "hello"
+code 0
+out "ran hello words=[] name=\"\" number=\"5\"\n"
+errs ""
+
+args "-u" "5" "count"
+code 2
+out ""
+errs "hi: -u is hello's, not count's\n"
+
+args "--number" "5" "hello"
+code 0
+out "ran hello words=[] name=\"\" number=\"5\"\n"
+errs ""
+
+args "--number" "5" "count"
+code 0
+out "ran count words=[] number=\"5\"\n"
+errs ""
+
+args "--number=5" "count"
+code 0
+out "ran count words=[] number=\"5\"\n"
+errs ""
+
+args "--name" "ada" "hello"
+code 0
+out "ran hello words=[] name=\"ada\" number=\"\"\n"
+errs ""
+
+args "--name" "ada" "count"
+code 2
+out ""
+errs "hi: --name is hello's, not count's\n"
+
+args "-e" "-n" "ada"
+code 0
+out "ran hello words=[] name=\"ada\" number=\"\"\n"
+errs ""
+
+args "-c" "-n" "5"
+code 0
+out "ran count words=[] number=\"5\"\n"
+errs ""
+
+args "-d" "look"
+code 2
+out ""
+errs "hi: verb look: flag --deep has the name or short flag that asks for verb delete\n"
+
+args "look" "-d"
+code 2
+out ""
+errs "hi: verb look: flag --deep has the name or short flag that asks for verb delete\n"
+
+args "delete"
+code 2
+out ""
+errs "hi: verb look: flag --deep has the name or short flag that asks for verb delete\n"
+

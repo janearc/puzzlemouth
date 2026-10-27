@@ -1,0 +1,25 @@
+# one call per line: the tool, then each word as a Go string.
+# pair: two verbs give -n to flags of different names. Before the verb,
+# -n cannot be read, since it is --name to one and --number to the other.
+pair "hello" "-n" "ada"
+pair "count" "-n" "5"
+pair "-n" "ada" "hello"
+pair "-n" "5" "count"
+pair "-n" "5" "hello"
+pair "-nada" "hello"
+pair "-n=ada" "hello"
+pair "-qn" "hello"
+pair "-u" "5" "hello"
+pair "-u" "5" "count"
+pair "--number" "5" "hello"
+pair "--number" "5" "count"
+pair "--number=5" "count"
+pair "--name" "ada" "hello"
+pair "--name" "ada" "count"
+pair "-e" "-n" "ada"
+pair "-c" "-n" "5"
+# clash: a verb's flag that is another verb's short flag is refused when
+# the tool is checked, so no call runs.
+clash "-d" "look"
+clash "look" "-d"
+clash "delete"

@@ -1,0 +1,18 @@
+# vim: set filetype=game:
+# game: this repository
+
+# puzzlemouth: what every app here gets, so nobody decides it again.
+name puzzlemouth
+
+# no lint lines, so the rules in ~/.config/game/config apply. a lint
+# line here replaces all of them; add one only with the whole block.
+
+# REMAINING.md is the working list for the road; it names the people
+# working it and is never in a release, of puzzlemouth or a stack.
+omit REMAINING.md
+
+# the mocks, generated from the interfaces they stand in for. mockgen is
+# pinned in go.mod as a tool, so every run uses the same version. the
+# interface is internal, so its mock is a test file of the package that
+# uses it: nothing outside the tests can see it.
+run mocks . :: go tool mockgen -write_package_comment=false -destination pzm/machine_mock_test.go -package pzm github.com/janearc/puzzlemouth/internal/host Machine
