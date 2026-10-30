@@ -56,7 +56,10 @@ func List(name verb.Name, short verb.Short, help verb.Help) Flag {
 func newFlag(name verb.Name, short verb.Short, help verb.Help,
 	how kind) Flag {
 	declared, err := verb.NewFlag(verb.Unlimited, name, short, help)
-	return Flag{declared, how, err}
+	if err != nil {
+		return Flag{kind: how, err: err}
+	}
+	return Flag{declared: *declared, kind: how}
 }
 
 // flagValue is what one run of the tool gave a flag, as the parser

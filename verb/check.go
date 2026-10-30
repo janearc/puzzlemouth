@@ -36,7 +36,7 @@ type samples map[string]sample
 //
 // The dry-run check for a verb that writes is syntactic. It wants a call
 // in the example given "--dry-run" and does not see what that call runs.
-func Check(source fs.FS, verbs ...Verb) error {
+func Check(source fs.FS, verbs ...*Verb) error {
 	found, err := read(source)
 	if err != nil {
 		return err
@@ -63,7 +63,7 @@ func Check(source fs.FS, verbs ...Verb) error {
 
 // holds is nothing when a verb's example is in the tests and holds its
 // output, and otherwise why not.
-func (found samples) holds(made Verb) error {
+func (found samples) holds(made *Verb) error {
 	each, err := found.of(made)
 	if err != nil {
 		return err
@@ -130,29 +130,32 @@ func (search *dryStrings) visit(node ast.Node) bool {
 
 // of is a verb's example, or why it cannot be checked or shown. It is
 // not in the tests. Or its file is one go test leaves out.
-func (found samples) of(made Verb) (sample, error) {
+func (found samples) of(made *Verb) (*sample, error) {
 	each, there := found[string(made.example)]
 	switch {
 	case !there:
-		return sample{}, fmt.Errorf("verb %s: %s is not in the tests",
+		return nil, fmt.Errorf("verb %s: %s is not in the tests",
 			made.name, made.example)
 	case each.left != "":
-		return sample{}, fmt.Errorf("verb %s: %s is in %s, which "+
+		return nil, fmt.Errorf("verb %s: %s is in %s, which "+
 			"go test leaves out on this build, so it never runs",
 			made.name, made.example, each.left)
 	}
-	return each, nil
+	return &each, nil
 }
 
 // Shown is the whole function of a verb's example, as written in the
 // source, for the code window in visualdocs.
-func Shown(source fs.FS, made Verb) (string, error) {
+func Shown(source fs.FS, made *Verb) (string, error) {
 	found, err := read(source)
 	if err != nil {
 		return "", err
 	}
 	each, err := found.of(made)
-	return each.code, err
+	if err != nil {
+		return "", err
+	}
+	return each.code, nil
 }
 
 // read is the example functions in every _test.go file at the top of

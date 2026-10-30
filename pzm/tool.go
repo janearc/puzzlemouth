@@ -11,8 +11,8 @@ import (
 	"os"
 	"slices"
 
-	"github.com/janearc/puzzlemouth/internal/host"
 	"github.com/janearc/puzzlemouth/verb"
+	"golang.org/x/term"
 )
 
 // Do is what a verb does when it runs.
@@ -48,14 +48,17 @@ type Tool struct {
 	name    verb.Name
 	help    verb.Help
 	stamps  stamps
-	machine host.Machine // what the tool asks of the machine it runs on
-	settled *settled     // what its config said, once it has been read
+	settled *settled // what its config said, once it has been read
 	flags   []Flag
 	verbs   []declaredVerb
 	refused []error
 	bare    []verb.Name // what Bare named, each time it was called
-	// atTerminal says whether a call reads and writes a terminal; nil is
-	// terminals, which asks the machine
+	// executable and terminal are decided once, by Run, at the edge:
+	// where the running binary is, and whether a call reads and writes
+	// terminals. Nothing below Run asks the system again.
+	executable string
+	terminal   bool
+	// atTerminal replaces terminal for a test; nil keeps terminal
 	atTerminal func(in io.Reader, out io.Writer) bool
 }
 
@@ -73,8 +76,7 @@ type declaredVerb struct {
 func New(name verb.Name, help verb.Help, build Build, built Built,
 	who Who, sids Sessions) *Tool {
 	return &Tool{name: name, help: help,
-		stamps:  stamps{build, built, who, sids},
-		machine: host.NewLocal()}
+		stamps: stamps{build, built, who, sids}}
 }
 
 // Verb declares one of the tool's verbs, its facts and its flags. When
@@ -92,7 +94,7 @@ func (tool *Tool) Verb(name verb.Name, short verb.Short, help verb.Help,
 		tool.refused = append(tool.refused, err)
 		return
 	}
-	if err := tool.verbRefusal(declared, do); err != nil {
+	if err := tool.verbRefusal(*declared, do); err != nil {
 		tool.refused = append(tool.refused, err)
 		return
 	}
@@ -103,7 +105,7 @@ func (tool *Tool) Verb(name verb.Name, short verb.Short, help verb.Help,
 	}
 	// The tool keeps its own copy: flags is the caller's to change.
 	tool.verbs = append(tool.verbs,
-		declaredVerb{declared, slices.Clone(flags), do})
+		declaredVerb{*declared, slices.Clone(flags), do})
 }
 
 // Bare names the verb a tool runs when nothing follows its name at a
@@ -133,32 +135,34 @@ func (tool *Tool) AtTerminal(at func(in io.Reader, out io.Writer) bool) {
 }
 
 // terminals is whether in and out are both a terminal: each an open file
-// that the machine says is one. /dev/null, a pipe and a file are not.
-func (tool *Tool) terminals(in io.Reader, out io.Writer) bool {
-	for _, each := range []any{in, out} {
-		file, isFile := each.(*os.File)
-		if !isFile {
-			return false
-		}
-		fd := int(file.Fd())
-		if !tool.machine.IsTerminal(fd) {
-			return false
-		}
-	}
-	return true
+// that is one. /dev/null, a pipe and a file are not, and neither is
+// anything that is no file. The second is not asked if the first is not.
+func terminals(in io.Reader, out io.Writer) bool {
+	return isTerminal(in) && isTerminal(out)
+}
+
+// isTerminal is whether an end of a call is an open file that is a
+// terminal.
+func isTerminal(end any) bool {
+	file, isFile := end.(*os.File)
+	return isFile && term.IsTerminal(int(file.Fd()))
 }
 
 // bareHere is the verb a call with nothing after the tool runs here. At
 // a terminal that is the one Bare named; anywhere else it is "".
 func (tool *Tool) bareHere(in io.Reader, out io.Writer) verb.Name {
-	at := tool.atTerminal
-	if at == nil {
-		at = tool.terminals
+	bare := tool.bareVerb()
+	if bare == "" {
+		return ""
 	}
-	if bare := tool.bareVerb(); bare != "" && at(in, out) {
-		return bare
+	here := tool.terminal
+	if tool.atTerminal != nil {
+		here = tool.atTerminal(in, out)
 	}
-	return ""
+	if !here {
+		return ""
+	}
+	return bare
 }
 
 // bareRefusals are what is wrong with what Bare named: a second Bare, or
@@ -371,16 +375,36 @@ func clashesWith(toolFlag Flag, each declaredVerb) []error {
 // own test files. Every verb's example must be there, and go test holds
 // it to what it prints. The tool's tests call it with os.DirFS(".").
 func (tool *Tool) Examples(tests fs.FS) error {
-	verbs := make([]verb.Verb, none, len(tool.verbs))
-	for _, each := range tool.verbs {
-		verbs = append(verbs, each.verb)
+	verbs := make([]*verb.Verb, none, len(tool.verbs))
+	for place := range tool.verbs {
+		verbs = append(verbs, &tool.verbs[place].verb)
 	}
 	return errors.Join(tool.Check(), verb.Check(tests, verbs...))
 }
 
-// Run is RunWith, the verb reading the tool's standard input.
+// Run is RunWith, the verb reading the tool's standard input. It is the
+// edge: it asks the system once where the running binary is and whether
+// standard input and out are terminals, and the tool is handed those
+// plain values.
+//
+// A tool that cannot tell where it is running is refused with exit 2.
 func (tool *Tool) Run(args []string, out, errs io.Writer) int {
-	return tool.RunWith(args, os.Stdin, out, errs)
+	path, err := os.Executable()
+	return tool.start(args, os.Stdin, out, errs, path, err)
+}
+
+// start is Run with what the edge found handed in: the path of the
+// running binary, or why it is not known.
+func (tool *Tool) start(args []string, in io.Reader, out,
+	errs io.Writer, path string, unknown error) int {
+	if unknown != nil {
+		fmt.Fprintf(errs, "%s: cannot tell where it is running: %v\n",
+			tool.name, unknown)
+		return statusUnread
+	}
+	tool.executable = path
+	tool.terminal = terminals(in, out)
+	return tool.RunWith(args, in, out, errs)
 }
 
 // RunWith runs the verb args ask for, reading in and writing to out and

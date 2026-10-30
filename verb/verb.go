@@ -12,8 +12,11 @@ import (
 	"fmt"
 	"math"
 	"regexp"
+	"strconv"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/janearc/puzzlemouth/config"
 )
 
 // Name is a verb's name, lowercase words joined by hyphens: foo-bar. Its
@@ -63,6 +66,19 @@ const DefaultHelpWidth Width = 70
 // Unlimited is a width that holds no help to any length.
 const Unlimited Width = math.MaxInt
 
+// SetLine reads a width from the line of a config: one word, a positive
+// whole number. A word that is not one is refused, and the width is left
+// as it was. It is what config reads a help-width line with.
+func (width *Width) SetLine(line config.Line) error {
+	word := line.Words[firstWord]
+	got, err := strconv.Atoi(word)
+	if err != nil || got <= none {
+		return fmt.Errorf("%q is not a positive whole number", word)
+	}
+	*width = Width(got)
+	return nil
+}
+
 // TooLong is why help is over width characters, or nothing when it is
 // not. Characters are counted, not bytes.
 func TooLong(help Help, width Width) error {
@@ -78,14 +94,14 @@ var named = regexp.MustCompile(`^[a-z][a-z0-9]*(-[a-z0-9]+)*$`)
 // New is a verb, or why it cannot be one. It gives every refusal at once.
 // Each names the part it is about.
 func New(name Name, short Short, help Help, page Page,
-	example Example, facts Facts) (Verb, error) {
+	example Example, facts Facts) (*Verb, error) {
 	return NewWithin(DefaultHelpWidth, name, short, help, page, example,
 		facts)
 }
 
 // NewWithin is New with help held to width rather than the default.
 func NewWithin(width Width, name Name, short Short, help Help, page Page,
-	example Example, facts Facts) (Verb, error) {
+	example Example, facts Facts) (*Verb, error) {
 	refused := partsRefused(width, name, short, help)
 	refuse := refused.refuse
 	pageText, exampleText := string(page), string(example)
@@ -99,10 +115,10 @@ func NewWithin(width Width, name Name, short Short, help Help, page Page,
 		refuse(false, "facts", why)
 	}
 	if len(refused) > none {
-		return Verb{}, fmt.Errorf("verb %s: %w", name,
+		return nil, fmt.Errorf("verb %s: %w", name,
 			errors.Join(refused...))
 	}
-	return Verb{name, short, help, page, example, facts}, nil
+	return &Verb{name, short, help, page, example, facts}, nil
 }
 
 // refusals are what is wrong with a verb or a flag. Each names its part.

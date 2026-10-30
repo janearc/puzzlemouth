@@ -11,6 +11,8 @@ import (
 	"fmt"
 	"os"
 	"strings"
+
+	"github.com/janearc/puzzlemouth/config"
 )
 
 // namespace is the purpose a build signature is made for, so a signature
@@ -24,6 +26,52 @@ const namespace = "build"
 // file would hold.
 type Signers struct{ keys map[string]string }
 
+// Signer is one line of pzm's config, "signer NAME :: KEY": a person
+// whose signature on a build --who vouches for. Config fills it, and
+// Signers.Add vouches for it. Its fields are plain, as it is only read.
+type Signer struct {
+	// Name is who the key belongs to.
+	Name string
+	// Key is the line an authorized_keys file would hold.
+	Key string
+	// At is the line of the config it was read from.
+	At int
+}
+
+// SetLine reads a signer from the line of the config: one word, the
+// name, and the key as the tail. It refuses a key that is not an
+// ed25519 public key.
+func (signer *Signer) SetLine(line config.Line) error {
+	if err := keyRefusal(line.Tail); err != nil {
+		return err
+	}
+	signer.Name, signer.Key, signer.At = line.Words[nameWord], line.Tail,
+		line.At
+	return nil
+}
+
+// nameWord is the place of the name among a signer line's words. It's
+// defined: a signer line takes one.
+const nameWord = 0
+
+// keyRefusal is why a line is not an ed25519 public key, or nothing.
+func keyRefusal(line string) error {
+	parts := strings.Fields(line)
+	if len(parts) < pairFields || parts[kindField] != "ssh-ed25519" {
+		return fmt.Errorf("%q is not an ssh-ed25519 key line", line)
+	}
+	wire, err := base64.StdEncoding.DecodeString(parts[dataField])
+	if err != nil {
+		return errors.New("the key is not base64")
+	}
+	kind, key, err := pair(wire)
+	if err != nil || kind != "ssh-ed25519" ||
+		len(key) != ed25519.PublicKeySize {
+		return errors.New("the key is not an ed25519 public key")
+	}
+	return nil
+}
+
 // Add vouches for the key on line under name. It refuses a name already
 // vouched for, and a line that is not an ed25519 public key; the refusal
 // names the signer.
@@ -31,20 +79,8 @@ func (vouched *Signers) Add(name, line string) error {
 	if _, twice := vouched.keys[name]; twice {
 		return fmt.Errorf("signer %s is set twice", name)
 	}
-	parts := strings.Fields(line)
-	if len(parts) < pairFields || parts[kindField] != "ssh-ed25519" {
-		return fmt.Errorf("signer %s: %q is not an ssh-ed25519 key "+
-			"line", name, line)
-	}
-	wire, err := base64.StdEncoding.DecodeString(parts[dataField])
-	if err != nil {
-		return fmt.Errorf("signer %s: the key is not base64", name)
-	}
-	kind, key, err := pair(wire)
-	if err != nil || kind != "ssh-ed25519" ||
-		len(key) != ed25519.PublicKeySize {
-		return fmt.Errorf("signer %s: the key is not an ed25519 "+
-			"public key", name)
+	if err := keyRefusal(line); err != nil {
+		return fmt.Errorf("signer %s: %w", name, err)
 	}
 	if vouched.keys == nil {
 		vouched.keys = map[string]string{}
@@ -56,15 +92,22 @@ func (vouched *Signers) Add(name, line string) error {
 // Any is whether anyone is vouched for.
 func (vouched Signers) Any() bool { return len(vouched.keys) > nothing }
 
-// Signer says who signed the file at path. It reads the signature beside
-// it in path+".sig". No signature is "" and no error. Any signature that
-// does not verify is an error. So is one that a key outside vouched
-// made, and so is any signature when nobody is vouched for.
-func Signer(path string, vouched Signers) (string, error) {
+// SignedBy says who signed the file at path. It reads the signature
+// beside it in path+".sig". No signature is "" and no error.
+//
+// Any signature that does not verify is an error. So is one that a key
+// outside vouched made, and so is any signature when nobody is vouched
+// for.
+//
+// A path that is empty names no file, so no one signed it.
+func SignedBy(path string, vouched Signers) (string, error) {
+	if path == "" {
+		return "", nil
+	}
 	return signerAmong(path, vouched.keys)
 }
 
-// signerAmong is Signer with the known keys passed in, so a test can use
+// signerAmong is SignedBy with the known keys passed in, so a test can use
 // keys of its own.
 func signerAmong(path string, known map[string]string) (string, error) {
 	armour, err := os.ReadFile(path + ".sig")
@@ -144,34 +187,34 @@ const (
 )
 
 // parseSignature reads the armoured text ssh-keygen writes into its parts.
-func parseSignature(armour []byte) (signature, error) {
+func parseSignature(armour []byte) (*signature, error) {
 	body := strings.TrimSpace(string(armour))
 	if !strings.HasPrefix(body, armourTop) ||
 		!strings.HasSuffix(body, armourBottom) {
-		return signature{}, errors.New("not an ssh signature")
+		return nil, errors.New("not an ssh signature")
 	}
 	body = strings.TrimSuffix(strings.TrimPrefix(body, armourTop),
 		armourBottom)
 	joined := strings.Join(strings.Fields(body), "")
 	raw, err := base64.StdEncoding.DecodeString(joined)
 	if err != nil || !bytes.HasPrefix(raw, []byte(magic)) {
-		return signature{}, errors.New("not an ssh signature")
+		return nil, errors.New("not an ssh signature")
 	}
 	rest := raw[len(magic):]
 	if len(rest) < lengthBytes ||
 		binary.BigEndian.Uint32(rest) != signatureVersion {
-		return signature{}, errors.New("an ssh signature of an " +
+		return nil, errors.New("an ssh signature of an " +
 			"unknown version")
 	}
 	fields, err := fieldsOf(rest[lengthBytes:], signatureFields)
 	if err != nil {
-		return signature{}, err
+		return nil, err
 	}
 	kind, blob, err := pair(fields[blobField])
 	if err != nil || kind != "ssh-ed25519" {
-		return signature{}, errors.New("not an ed25519 signature")
+		return nil, errors.New("not an ed25519 signature")
 	}
-	return signature{key: fields[keyField],
+	return &signature{key: fields[keyField],
 		namespace: fields[namespaceField],
 		reserved:  fields[reservedField], hash: fields[hashField],
 		blob: blob}, nil

@@ -16,7 +16,7 @@ var readsOnly = verb.NewFacts(verb.WritesNothing, verb.LeavesAlone,
 
 // declared is a verb whose every part is sound, for tests to change one
 // part of at a time.
-func declared(t *testing.T) verb.Verb {
+func declared(t *testing.T) *verb.Verb {
 	t.Helper()
 	made, err := verb.New("foo-bar", 'f', "foos the bar",
 		"# foo-bar\n\nfoos the bar.", "ExampleFooBar", readsOnly)
@@ -244,7 +244,7 @@ func TestCheckRefusesTwoOfOne(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, second := range []verb.Verb{again, other} {
+	for _, second := range []*verb.Verb{again, other} {
 		if err := verb.Check(source, declared(t), second); err == nil {
 			t.Errorf("Check let %s beside foo-bar", second.Name())
 		}

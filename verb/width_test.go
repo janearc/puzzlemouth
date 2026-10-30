@@ -4,8 +4,50 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/janearc/puzzlemouth/config"
 	"github.com/janearc/puzzlemouth/verb"
 )
+
+// widthFile is a config of one help-width line, as pzm's own has it.
+type widthFile struct {
+	Width verb.Width `config:"help-width,1" help:"the most characters a line of help may have"`
+}
+
+// readWidth is the text read as a config of a help-width, starting from
+// the default.
+func readWidth(t *testing.T, text string) (widthFile, error) {
+	t.Helper()
+	schema, err := config.NewSchema[widthFile]()
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := widthFile{Width: verb.DefaultHelpWidth}
+	err = schema.Read("config", []byte(text), &got)
+	return got, err
+}
+
+// A help-width line sets the width to its one word.
+func TestAWidthIsReadFromItsLine(t *testing.T) {
+	got, err := readWidth(t, "help-width 90\n")
+	if err != nil || got.Width != 90 {
+		t.Errorf("got %d, %v", got.Width, err)
+	}
+}
+
+// Anti-test: a word that is not a positive whole number is refused,
+// naming the word, and the width stays as it was.
+func TestAWidthThatIsNotPositiveIsRefusedAndKeptAsItWas(t *testing.T) {
+	for _, word := range []string{"0", "-3", "7.5", "wide",
+		"99999999999999999999"} {
+		got, err := readWidth(t, "help-width "+word+"\n")
+		if err == nil || !strings.Contains(err.Error(), word) {
+			t.Errorf("%s: %v", word, err)
+		}
+		if got.Width != verb.DefaultHelpWidth {
+			t.Errorf("%s changed the width to %d", word, got.Width)
+		}
+	}
+}
 
 const (
 	// seventy is the default width. It's defined by verb.DefaultHelpWidth.

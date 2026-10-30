@@ -16,6 +16,7 @@ import (
 	"syscall"
 	"testing"
 
+	"github.com/janearc/puzzlemouth/config"
 	"pgregory.net/rapid"
 )
 
@@ -652,8 +653,11 @@ func TestWholeArmourIsRead(t *testing.T) {
 	key := makerFrom("a")
 	raw := key.raw(good, []byte("a binary"))
 	sig, err := parseSignature(armoured(raw))
-	if err != nil || string(sig.namespace) != namespace {
-		t.Errorf("got %q, %v", sig.namespace, err)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(sig.namespace) != namespace {
+		t.Errorf("got %q", sig.namespace)
 	}
 }
 
@@ -791,12 +795,12 @@ func vouching(t *testing.T) Signers {
 	return vouched
 }
 
-// A configured signer is vouched for exactly as a known key was: Signer
+// A configured signer is vouched for exactly as a known key was: SignedBy
 // names it.
-func TestAConfiguredSignerIsNamedBySigner(t *testing.T) {
+func TestAConfiguredSignerIsNamedBySignedBy(t *testing.T) {
 	body := []byte("a binary")
 	file := placed(t, body, makerFrom("a").raw(good, body))
-	got, err := Signer(file, vouching(t))
+	got, err := SignedBy(file, vouching(t))
 	if got != "ada" || err != nil {
 		t.Errorf("got %q, %v; want ada", got, err)
 	}
@@ -808,7 +812,7 @@ func TestWithNoSignerNothingIsVouchedFor(t *testing.T) {
 	body := []byte("a binary")
 	file := placed(t, body, makerFrom("a").raw(good, body))
 	var nobody Signers
-	got, err := Signer(file, nobody)
+	got, err := SignedBy(file, nobody)
 	if got != "" || err == nil ||
 		!strings.Contains(err.Error(), "does not know") {
 		t.Errorf("got %q, %v", got, err)
@@ -822,9 +826,17 @@ func TestWithNoSignerNothingIsVouchedFor(t *testing.T) {
 func TestNoSignatureIsNobodyWhoIsVouchedFor(t *testing.T) {
 	bare := room(t) + "/gort"
 	for _, vouched := range []Signers{{}, vouching(t)} {
-		if got, err := Signer(bare, vouched); got != "" || err != nil {
+		if got, err := SignedBy(bare, vouched); got != "" || err != nil {
 			t.Errorf("got %q, %v", got, err)
 		}
+	}
+}
+
+// Anti-test: a path that is empty names no file, so no signature is read
+// from the working directory and no one signed it.
+func TestAnEmptyPathHasNoSignature(t *testing.T) {
+	if got, err := SignedBy("", vouching(t)); got != "" || err != nil {
+		t.Errorf("got %q, %v", got, err)
 	}
 }
 
@@ -861,6 +873,59 @@ func TestAddRefusesALineThatIsNotAKey(t *testing.T) {
 func shortKey() string {
 	return strings.TrimPrefix(
 		(maker{}).shortLine(), "ssh-ed25519 ")
+}
+
+// A signer line is read from its name and its tail, and keeps the line it
+// was on.
+func TestASignerIsReadFromItsLine(t *testing.T) {
+	key := makerFrom("a").line()
+	got, err := readSigners(t, "# the signers\n\nsigner ada :: "+key+"\n")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := Signer{Name: "ada", Key: key, At: signerAt}
+	if len(got.Signers) != 1 || got.Signers[0] != want {
+		t.Errorf("read %+v, wanted %+v", got.Signers, want)
+	}
+}
+
+// signerAt is the line a test's signer is on. It's defined.
+const signerAt = 3
+
+// signerFile is a config of signers, as pzm's own has them.
+type signerFile struct {
+	Signers []Signer `config:"signer,1,tail" help:"a person whose signature vouches"`
+}
+
+// readSigners is the text read as a config of signers.
+func readSigners(t *testing.T, text string) (*signerFile, error) {
+	t.Helper()
+	schema, err := config.NewSchema[signerFile]()
+	if err != nil {
+		t.Fatal(err)
+	}
+	var got signerFile
+	if err := schema.Read("config", []byte(text), &got); err != nil {
+		return nil, err
+	}
+	return &got, nil
+}
+
+// Anti-test: a signer whose key is not an ed25519 key is refused, naming
+// the line and why, and keeps nothing.
+func TestASignerWithABadKeyIsRefusedAndKeepsNothing(t *testing.T) {
+	for why, key := range map[string]string{
+		"no key":      "ssh-ed25519",
+		"not base64":  "ssh-ed25519 !!!",
+		"not a key":   "ssh-ed25519 AAAA",
+		"a short key": "ssh-ed25519 " + shortKey(),
+	} {
+		got, err := readSigners(t, "signer ada :: "+key+"\n")
+		if err == nil || got != nil ||
+			!strings.Contains(err.Error(), "config:1: signer: ") {
+			t.Errorf("%s: got %+v, %v", why, got, err)
+		}
+	}
 }
 
 // Anti-test: a name can be vouched for once.

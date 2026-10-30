@@ -4,28 +4,33 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"strconv"
+	"path/filepath"
 
 	"github.com/janearc/puzzlemouth/config"
-	"github.com/janearc/puzzlemouth/internal/host"
 	"github.com/janearc/puzzlemouth/internal/who"
 	"github.com/janearc/puzzlemouth/verb"
 )
 
-// The keys of the lines pzm reads from its own config, ~/.config/pzm/
-// config. They are lowercase words joined by hyphens, as config wants.
-// firstWord is the place of the one word a line of the config takes. It's
-// defined by declared: each setting takes one.
-const firstWord = none
+// pzmFile is what pzm's own config, ~/.config/pzm/config, may say. With
+// no config nobody is vouched for and help is held to the default width.
+type pzmFile struct {
+	Signers []who.Signer `config:"signer,1,tail" help:"a person whose signature on a build --who vouches for"`
+	Width   verb.Width   `config:"help-width,1" help:"the most characters a line of help may have"`
+}
 
-const (
-	// signerKey is "signer NAME :: ssh-ed25519 KEY": a person whose
-	// signature on a build --who vouches for.
-	signerKey = "signer"
-	// helpWidthKey is "help-width N": the most characters a line of help
-	// may have.
-	helpWidthKey = "help-width"
-)
+// schema is what pzmFile may say, made once.
+var schema = must(config.NewSchema[pzmFile]())
+
+// must is the schema of a declaration that is fixed in this file, which
+// a test of this package holds sound. It panics on a refusal, since
+// nothing a caller does can make the declaration right.
+func must[File any](made *config.Schema[File],
+	err error) *config.Schema[File] {
+	if err != nil {
+		panic(err)
+	}
+	return made
+}
 
 // settings are what pzm's own config says. With no config they are
 // the defaults: nobody is vouched for and help is held to the default
@@ -38,88 +43,74 @@ type settings struct {
 
 // settled is the result of reading the config, kept so it is read once.
 type settled struct {
-	set settings
+	set *settings
 	err error
-}
-
-// declared are the lines pzm reads. config.New cannot refuse these, as
-// their keys are fixed here.
-func declared() []config.Setting {
-	signer, _ := config.New(signerKey, "a person whose signature on "+
-		"a build --who vouches for", one, config.Tail)
-	width, _ := config.New(helpWidthKey, "the most characters a line "+
-		"of help may have", one, config.NoTail)
-	return []config.Setting{signer, width}
 }
 
 // settings is what pzm's config says. It reads the config the
 // first time and remembers what it found, or why it could not.
-func (tool *Tool) settings() (settings, error) {
+func (tool *Tool) settings() (*settings, error) {
 	if tool.settled == nil {
-		set, err := readSettings(tool.machine)
+		set, err := readSettings()
 		tool.settled = &settled{set, err}
 	}
 	return tool.settled.set, tool.settled.err
 }
 
-// readSettings reads pzm's own config from the machine, never a tool's. A
-// config that is not there is the defaults. One that is there and does
-// not conform is refused whole, every wrong line named by the file and
-// the line.
-func readSettings(machine host.Machine) (settings, error) {
-	path, err := machine.ConfigPath()
+// configPath is ~/.config/pzm/config under the home the environment
+// gives. It is not made. No tool's config is pzm's to open.
+func configPath() (string, error) {
+	home, err := os.UserHomeDir()
 	if err != nil {
-		return settings{}, err
+		return "", err
 	}
-	set := settings{path: path, width: verb.DefaultHelpWidth}
-	raw, err := machine.ReadFile(path)
+	return filepath.Join(home, ".config", "pzm", "config"), nil
+}
+
+// readSettings reads pzm's own config, never a tool's. A config that is
+// not there is the defaults. One that is there and does not conform is
+// refused whole, every wrong line named by the file and the line.
+func readSettings() (*settings, error) {
+	path, err := configPath()
+	if err != nil {
+		return nil, err
+	}
+	set := &settings{path: path, width: verb.DefaultHelpWidth}
+	raw, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {
 		return set, nil
 	}
 	if err != nil {
-		return settings{}, err
+		return nil, err
 	}
-	entries, err := config.Read(path, raw, declared()...)
+	file := pzmFile{Width: verb.DefaultHelpWidth}
+	if err := schema.Read(path, raw, &file); err != nil {
+		return nil, err
+	}
+	vouched, err := vouchFor(path, file.Signers)
 	if err != nil {
-		return settings{}, err
+		return nil, err
 	}
+	set.signers, set.width = *vouched, file.Width
+	return set, nil
+}
+
+// vouchFor is the signers of a config, or nil and every name that is
+// set twice, each at its line. config has already seen to each key.
+func vouchFor(path string, each []who.Signer) (*who.Signers, error) {
 	var refused []error
-	seen := map[string]bool{}
-	for _, each := range entries {
-		if each.Key() == helpWidthKey && seen[helpWidthKey] {
-			at := each.Line()
-			twice := fmt.Errorf("%s:%d: %s is set twice", path, at,
-				helpWidthKey)
-			refused = append(refused, twice)
-			continue
-		}
-		seen[each.Key()] = true
-		if err := set.take(each); err != nil {
-			at := each.Line()
-			named := fmt.Errorf("%s:%d: %w", path, at, err)
+	vouched := new(who.Signers)
+	for _, signer := range each {
+		if err := vouched.Add(signer.Name, signer.Key); err != nil {
+			at := signer.At
+			named := fmt.Errorf("%s:%d: signer: %w", path, at, err)
 			refused = append(refused, named)
 		}
 	}
 	if err := errors.Join(refused...); err != nil {
-		return settings{}, err
+		return nil, err
 	}
-	return set, nil
-}
-
-// take sets what one line of the config says. config has already seen to
-// its key and its words, so the key is one of declared.
-func (set *settings) take(each config.Entry) error {
-	word := each.Words()[firstWord]
-	if each.Key() == signerKey {
-		return set.signers.Add(word, each.Tail())
-	}
-	number, err := strconv.Atoi(word)
-	if err != nil || number <= none {
-		return fmt.Errorf("%s is %q, not a positive whole number",
-			helpWidthKey, word)
-	}
-	set.width = verb.Width(number)
-	return nil
+	return vouched, nil
 }
 
 // helpRefusals is each line of help in the tool that is over width: a

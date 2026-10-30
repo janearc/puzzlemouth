@@ -18,14 +18,14 @@ type Flag struct {
 // once, each naming the part it is about. The rules are those a verb's
 // name, short flag and help are held to.
 // Help is held to width, as a verb's is by NewWithin.
-func NewFlag(width Width, name Name, short Short, help Help) (Flag,
+func NewFlag(width Width, name Name, short Short, help Help) (*Flag,
 	error) {
 	refused := partsRefused(width, name, short, help)
 	if len(refused) > none {
-		return Flag{}, fmt.Errorf("flag --%s: %w", name,
+		return nil, fmt.Errorf("flag --%s: %w", name,
 			errors.Join(refused...))
 	}
-	return Flag{name, short, help}, nil
+	return &Flag{name, short, help}, nil
 }
 
 // Name is the flag's name.

@@ -13,7 +13,7 @@
 // can set or unset an environment variable. Proof is a signature made
 // with a key that needs Touch ID, kept beside the binary as NAME.sig.
 //
-// Signer checks that signature from inside the binary, as a convenience:
+// SignedBy checks that signature from inside the binary, as a convenience:
 // a binary someone has tampered with can print whatever it likes. The
 // check that counts runs outside it, with a file of lines, each a name
 // and a public key, given to -f:
@@ -25,7 +25,7 @@ package who
 import "strings"
 
 // Of is what a command prints for --who. name is the command, who and
-// sids are the two stamped variables, and signer is the name Signer
+// sids are the two stamped variables, and signer is the name SignedBy
 // returned, or "" for nobody.
 func Of(name, who, sids, signer string) string {
 	var lines []string

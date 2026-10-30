@@ -58,8 +58,8 @@ func TestAMeasuredNumberNeedsNoPage(t *testing.T) {
 		t.Fatal(err)
 	}
 	speed, err := read.Get("continuous-speed")
-	if err != nil || speed.From().Key() != "nbsir-79-1910" {
-		t.Errorf("got %v, %v", speed, err)
+	if err != nil || speed.From == nil || speed.From.Key != "nbsir-79-1910" {
+		t.Errorf("got %+v, %v", speed, err)
 	}
 }
 

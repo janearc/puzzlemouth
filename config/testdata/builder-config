@@ -1,0 +1,41 @@
+# a builder's own config, read when its home is set to somewhere else.
+# names and paths are changed; the keys, their words, their shapes and
+# the tab before each line of a block are as they were.
+author someone
+exclude spec-docs/
+lint width 80
+lint rows 25
+lint comments
+lint print
+lint exclaim
+lint shout
+lint words hyperscaler enterprise-grade blazing-fast load-bearing
+lint paragraph 4
+
+project alpha
+	road ~/roots/alpha-road.git
+
+project beta
+	road ~/roots/beta-road.git
+	# public already, with history; the tag there is the dist. the
+	# push is the owner's.
+	dist https://example.invalid/beta.git
+
+# alpha as another config names it, so a stack that names it builds
+# here as it does there.
+project alpha-alias
+	road ~/roots/alpha-road.git
+
+# roads for the trees in a working directory. no dist: releases are the
+# owner's.
+project gamma
+	road ~/roots/gamma.git
+project delta
+	road ~/roots/delta.git
+	set SHELF_DIR /srv/shelf/sources
+project epsilon
+	road ~/roots/epsilon.git
+# a vendored copy, held at the tags a project pins; read-only from
+# upstream, never pushed to.
+project vendored
+	road ~/roots/vendored.git

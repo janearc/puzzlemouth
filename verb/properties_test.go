@@ -41,7 +41,7 @@ func drawn(t *rapid.T, chars, label string) string {
 
 // declaredWith is a verb made from the parts, with an example and page
 // that are sound.
-func declaredWith(name string, short verb.Short, help string) (verb.Verb, error) {
+func declaredWith(name string, short verb.Short, help string) (*verb.Verb, error) {
 	return verb.New(verb.Name(name), short, verb.Help(help),
 		"# a page", "ExampleDrawn", readsOnly)
 }

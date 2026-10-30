@@ -47,7 +47,7 @@ func (tool *Tool) builtinVerb(name verb.Name, help verb.Help,
 		"# "+verb.Page(name), "ExampleNew",
 		verb.NewFacts(verb.WritesNothing, verb.LeavesAlone,
 			verb.ThisMachine, verb.NoOne, verb.Light))
-	return declaredVerb{verb: declared, do: do}
+	return declaredVerb{verb: *declared, do: do}
 }
 
 // age is --age: the tool's commit and how long ago it was made.
@@ -88,18 +88,17 @@ type vouch struct {
 // signature, and an error when one does not check or is by a stranger.
 //
 // When no signer is set it is nobody and unset says why.
-func (tool *Tool) signedBy() (vouch, error) {
+func (tool *Tool) signedBy() (*vouch, error) {
 	set, err := tool.settings()
 	if err != nil {
-		return vouch{}, err
+		return nil, err
 	}
 	if !set.signers.Any() {
-		return vouch{unset: true, path: set.path}, nil
+		return &vouch{unset: true, path: set.path}, nil
 	}
-	path, err := tool.machine.Executable()
+	signer, err := who.SignedBy(tool.executable, set.signers)
 	if err != nil {
-		return vouch{}, err
+		return nil, err
 	}
-	signer, err := who.Signer(path, set.signers)
-	return vouch{signer: signer, path: set.path}, err
+	return &vouch{signer: signer, path: set.path}, nil
 }

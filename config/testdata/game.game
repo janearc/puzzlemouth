@@ -1,0 +1,32 @@
+# vim: set filetype=game:
+# a project's .game file, as the build tool's own repository writes it.
+# names and paths are changed; the keys, their words and their shapes
+# are as they were.
+name game
+
+# the members the project is built with, in build order, and the branch
+# each is taken at.
+stack puzzlemouth main
+stack libninja main
+stack okapi main
+
+# lint rules for this repository. any lint line in a .game replaces all
+# the lint rules in the config, so these lines copy all of them.
+lint width 80
+lint rows 25
+lint comments
+lint print
+lint exclaim
+lint shout
+lint words hyperscaler enterprise-grade blazing-fast load-bearing
+lint paragraph 4
+lint allow README.md rows exclaim
+# a getting-started doc is written as it is spoken, and it says so.
+lint allow doc/getting-started.md paragraph exclaim words
+
+# property tests, in the packages whose tests import rapid, run under
+# check with this many checks each.
+rapid checks 1000
+target mocks . :: go run go.uber.org/mock/mockgen@v0.6.0 -source cmd/game/runner_contract_test.go -destination cmd/game/runner_mock_test.go -package main
+target mocks . :: go run go.uber.org/mock/mockgen@v0.6.0 -destination internal/patch/paths_mock_test.go -package patch_test example.invalid/game/internal/patch Paths
+target mocks . :: go run go.uber.org/mock/mockgen@v0.6.0 -destination internal/repo/runner_mock_test.go -package repo_test example.invalid/game/internal/repo Runner

@@ -10,16 +10,18 @@
 // never typed from memory. Any picked number is config, in yml. The code
 // names them and asks for them here. It holds none of its own.
 //
-// The file is read whole through go.uber.org/config in its strict mode.
-// The file is refused for a key nobody knows, a key written twice, or
-// an entry missing what its kind needs.
+// The file is read whole by package yamlfile, which refuses a key nobody
+// knows, a key written twice and a value of the wrong type, each at its
+// line. Read then refuses a number missing what its kind needs.
 package numbers
 
 import (
-	"bytes"
+	"errors"
 	"fmt"
+	"strconv"
+	"strings"
 
-	"go.uber.org/config"
+	"github.com/janearc/puzzlemouth/yamlfile"
 )
 
 // Kind is where a number came from: measured, or picked.
@@ -36,114 +38,176 @@ const (
 // in sources.yaml, the place in it, the page of a paged source and the
 // text found there.
 type Source struct {
-	key, where, text string
-	page             int
+	// Key is the source's key in the project's sources.yaml.
+	Key string `yaml:"key"`
+	// Where is the place in the source: page, table, row and column.
+	Where string `yaml:"where"`
+	// Page is the page of a paged source the text is on, counted as the
+	// file counts them; none for a source that is not paged.
+	Page int `yaml:"page"`
+	// Text is what the source reads there, as a check would find it.
+	Text string `yaml:"text"`
 }
-
-// Key is the source's key in the project's sources.yaml.
-func (from Source) Key() string { return from.key }
-
-// Where is the place in the source: page, table, row and column.
-func (from Source) Where() string { return from.where }
-
-// Page is the page of a paged source the text is on, counted as the
-// file counts them; none for a source that is not paged.
-func (from Source) Page() int { return from.page }
-
-// Text is what the source reads there, as a check would find it.
-func (from Source) Text() string { return from.text }
 
 // Number is one named number. It has a value and a unit and a line on
 // what it is, and a kind. Each measured one has its source. Each picked one
 // says who picked it.
 type Number struct {
-	name, unit, says, by string
-	value                float64
-	kind                 Kind
-	from                 Source
+	// Name is what the code asks for the number by.
+	Name string `yaml:"name"`
+	// Value is the number.
+	Value float64 `yaml:"value"`
+	// Unit is the number's unit, as written; none for a pure number.
+	Unit string `yaml:"unit"`
+	// Says is what the number is.
+	Says string `yaml:"says"`
+	// Kind is where the number came from.
+	Kind Kind `yaml:"kind"`
+	// From is the source a measured number was read from. A picked
+	// number has none.
+	From *Source `yaml:"source"`
+	// By is who picked a picked number, and when. A measured number has
+	// none.
+	By string `yaml:"by"`
 }
 
-// Name is what the code asks for the number by.
-func (number Number) Name() string { return number.name }
+// Numbers is a numbers file read: every number, in the order written.
+type Numbers []Number
 
-// Value is the number.
-func (number Number) Value() float64 { return number.value }
+const (
+	// fromPrefix asks ParseInt to take the base from the prefix, as 0x10
+	// and 010 are written. It's defined by strconv.ParseInt: base 0.
+	fromPrefix = 0
+	// bits is the size a number is read at. It's defined: a float64 is
+	// 64 bits.
+	bits = 64
+)
 
-// Unit is the number's unit, as written; none for a pure number.
-func (number Number) Unit() string { return number.unit }
-
-// Says is what the number is.
-func (number Number) Says() string { return number.says }
-
-// Kind is where the number came from.
-func (number Number) Kind() Kind { return number.kind }
-
-// From is the source a measured number was read from.
-func (number Number) From() Source { return number.from }
-
-// By is who picked a picked number, and when.
-func (number Number) By() string { return number.by }
-
-// Numbers is a numbers file read: every number by its name.
-type Numbers struct {
-	file   string
-	byName map[string]Number
-	order  []string
-}
-
-// Read is the numbers a file holds. It refuses a file that is not YAML.
-// It refuses a key nobody knows and a name written twice. It refuses an
-// entry missing what its kind needs.
+// Read is the numbers a file holds, or nil and why not. It refuses what
+// package yamlfile refuses: a file that is not YAML, a key nobody knows,
+// a key written twice, a value of the wrong type.
 //
-// It refuses a name the YAML reader may have changed. Those names are
-// true, false and anything that parses as a number in any base. The
-// reader turns yes into true and 010 into 8 before the code sees the
-// name.
+// It refuses an entry missing what its kind needs, a name written twice
+// and a name that reads as a number.
 //
-// Quotes do not help. The reader strips them, so '0x10' is refused as well.
-// The message ends "call the number something else". Quoted names that
-// are no number are taken as written, as 'yes' is.
+// A name that parses as a number in any base is refused: 010 and 0x10
+// are numbers, and nobody should ask for Get("010"). The message ends
+// "call the number something else". A name such as yes or true is a
+// word and is taken as written.
+//
+// Every refusal is reported together, with the file named once. A refusal
+// by yamlfile is reported alone, as it stops the file being read.
 func Read(file string, raw []byte) (Numbers, error) {
-	source := config.RawSource(bytes.NewReader(raw))
-	provider, err := config.NewYAML(config.Name(file), source)
-	if err != nil {
-		return Numbers{}, fmt.Errorf("%s: %w", file, err)
+	var shown struct {
+		Numbers []map[string]any `yaml:"numbers"`
 	}
-	var written wire
-	if err := provider.Get(config.Root).Populate(&written); err != nil {
-		return Numbers{}, fmt.Errorf("%s: %w", file, err)
+	if err := yamlfile.Read(file, raw, &shown); err != nil {
+		return nil, err
 	}
-	read := Numbers{file: file, byName: map[string]Number{}}
-	for _, entry := range written.Numbers {
-		number, err := entry.number()
-		if err != nil {
-			return Numbers{}, fmt.Errorf("%s: %w", file, err)
-		}
-		if _, twice := read.byName[number.name]; twice {
-			return Numbers{}, fmt.Errorf("%s: %s is written twice",
-				file, number.name)
-		}
-		read.byName[number.name] = number
-		read.order = append(read.order, number.name)
+	var written struct {
+		Numbers Numbers `yaml:"numbers"`
 	}
-	return read, nil
+	if err := yamlfile.Read(file, raw, &written); err != nil {
+		return nil, err
+	}
+	var refused []error
+	seen := map[string]bool{}
+	for place, each := range written.Numbers {
+		_, valued := shown.Numbers[place]["value"]
+		refused = append(refused, each.judged(place, valued, seen))
+	}
+	if err := errors.Join(refused...); err != nil {
+		return nil, fmt.Errorf("%s:\n  %s", file, strings.ReplaceAll(
+			err.Error(), "\n", "\n  "))
+	}
+	return written.Numbers, nil
 }
 
-// Get is the number of a name, or a refusal naming the file it is not in.
-func (read Numbers) Get(name string) (Number, error) {
-	number, ok := read.byName[name]
-	if !ok {
-		return Number{}, fmt.Errorf("%s holds no number called %s",
-			read.file, name)
+// judged is why the entry at place is refused, or nothing. Valued is
+// whether the file wrote a value for it. Seen holds the names already
+// read, and gets this one.
+func (number Number) judged(place int, valued bool,
+	seen map[string]bool) error {
+	err := number.refusal()
+	switch {
+	case number.Name == "":
+		return fmt.Errorf("entry %d: %w", place+1, err)
+	case seen[number.Name]:
+		return fmt.Errorf("%s is written twice", number.Name)
 	}
-	return number, nil
+	seen[number.Name] = true
+	if !valued && number.Says != "" {
+		unvalued := fmt.Errorf("%s: a number needs a value and says "+
+			"what it is", number.Name)
+		return errors.Join(unvalued, err)
+	}
+	return err
 }
 
-// All is every number in the file, in the order written.
-func (read Numbers) All() []Number {
-	all := make([]Number, len(read.order))
-	for place, name := range read.order {
-		all[place] = read.byName[name]
+// readAsNumber is whether a name parses as a number in any base, as 7,
+// 010, 0x10, 1e3 and .5 do. Words such as inf and nan have no digit and
+// are names.
+func readAsNumber(name string) bool {
+	_, intErr := strconv.ParseInt(name, fromPrefix, bits)
+	_, floatErr := strconv.ParseFloat(name, bits)
+	return strings.ContainsAny(name, "0123456789") &&
+		(intErr == nil || floatErr == nil)
+}
+
+// refusal is why the number as filled is not one, or nothing. It does
+// not judge the value, which the file may not have written.
+func (number Number) refusal() error {
+	switch {
+	case number.Name == "":
+		return errors.New("a number has no name")
+	case readAsNumber(number.Name):
+		return fmt.Errorf("%s: this name reads as a number, in some "+
+			"base, and Get(%q) would be hard to read; call the "+
+			"number something else", number.Name, number.Name)
+	case number.Says == "":
+		return fmt.Errorf("%s: a number needs a value and says what "+
+			"it is", number.Name)
 	}
-	return all
+	switch number.Kind {
+	case Measured:
+		return number.measuredRefusal()
+	case Picked:
+		return number.pickedRefusal()
+	}
+	return fmt.Errorf("%s: kind is measured or picked, not %q",
+		number.Name, number.Kind)
+}
+
+// measuredRefusal is why a measured number is not one: it needs its whole
+// source and no picker.
+func (number Number) measuredRefusal() error {
+	from := number.From
+	if from == nil || from.Key == "" || from.Where == "" ||
+		from.Text == "" || number.By != "" {
+		return fmt.Errorf("%s: a measured number names its "+
+			"source's key, where in it, and the text there, and "+
+			"no one picked it", number.Name)
+	}
+	return nil
+}
+
+// pickedRefusal is why a picked number is not one: it needs who picked it
+// and no source.
+func (number Number) pickedRefusal() error {
+	if number.By == "" || number.From != nil {
+		return fmt.Errorf("%s: a picked number says who picked it and "+
+			"when, and names no source", number.Name)
+	}
+	return nil
+}
+
+// Get is the number of a name, as a pointer to its place in the list, or
+// nil and a refusal naming the number it does not hold.
+func (read Numbers) Get(name string) (*Number, error) {
+	for place := range read {
+		if read[place].Name == name {
+			return &read[place], nil
+		}
+	}
+	return nil, fmt.Errorf("there is no number called %s", name)
 }

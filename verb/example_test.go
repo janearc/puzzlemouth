@@ -10,7 +10,7 @@ import (
 
 // age is the verb the example declares, so the test below can check the
 // example against this package's own tests.
-func age() (verb.Verb, error) {
+func age() (*verb.Verb, error) {
 	return verb.New("age", verb.NoShort,
 		"which commit this binary is, and how long ago it was made",
 		"# age\n\nwhich commit this binary was built from.", "ExampleNew",
