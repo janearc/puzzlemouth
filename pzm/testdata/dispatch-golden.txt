@@ -915,7 +915,7 @@ errs ""
 
 args "--who" "-q"
 code 0
-out "demo is not signed\ndemo was built by go rather than by game: no builder and no sessions in it\nno signer is set: no key is vouched for; add a signer line to /pzm-tests-have-no-home/.config/demo/config\n"
+out "demo is not signed\ndemo was built by go rather than by game: no builder and no sessions in it\nno signer is set: no key is vouched for; add a signer line to /pzm-tests-have-no-home/.config/pzm/config\n"
 errs ""
 
 args "-q" "--age"

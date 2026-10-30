@@ -33,6 +33,9 @@ flags and words mix in any order. `hello ada --loud` and `hello --loud
 ada` are the same call, and call.Args is `ada` either way. the lone `--`
 ends the flags. everything after it is a word, however it looks.
 
+the `--` itself is not given to the verb. `hello -- -fast` gives hello
+the word `-fast`.
+
 any value is the next word whatever it looks like. `--name --loud` gives
 the name `--loud` and leaves the switch off. any value that starts with a
 hyphen reads best after =, as `--name=-x`.

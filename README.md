@@ -64,4 +64,4 @@ call. pzm refuses a tool declared wrong. cobra parses underneath, hidden.
     doc/facts.md    what a verb does to the machine, and --dry-run
     doc/flags.md    flags: the three kinds, how they mix, what is refused
     doc/bare.md     what a tool does when called with nothing after it
-    doc/settings.md signer, help-width: `signer ada :: ssh-ed25519 AAAA...`
+    doc/settings.md pzm's own file, ~/.config/pzm/config; never a tool's

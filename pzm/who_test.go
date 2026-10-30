@@ -19,6 +19,10 @@ import (
 // owner reads and writes, no one else does.
 const perm = 0o600
 
+// dirPerm is the mode the test directories are made with. It's defined:
+// the owner alone enters them.
+const dirPerm = 0o700
+
 const (
 	// exitOK is the code of a call that did what it was asked. It's
 	// defined by Tool.RunWith.
@@ -40,7 +44,7 @@ func on(t *testing.T) (*Tool, *MockMachine) {
 	mock := NewMockMachine(gomock.NewController(t))
 	tool := New("demo", "a tool for testing pzm", "", "", "", "")
 	tool.machine = mock
-	mock.EXPECT().ConfigPath("demo").Return(configAt, nil).AnyTimes()
+	mock.EXPECT().ConfigPath().Return(configAt, nil).AnyTimes()
 	mock.EXPECT().ReadFile(configAt).Return(nil, os.ErrNotExist).AnyTimes()
 	return tool, mock
 }
@@ -53,7 +57,7 @@ func onSigner(t *testing.T) (*Tool, *MockMachine) {
 	mock := NewMockMachine(gomock.NewController(t))
 	tool := New("demo", "a tool for testing pzm", "", "", "", "")
 	tool.machine = mock
-	mock.EXPECT().ConfigPath("demo").Return(configAt, nil).AnyTimes()
+	mock.EXPECT().ConfigPath().Return(configAt, nil).AnyTimes()
 	configured := []byte("signer ada :: " + public + "\n")
 	mock.EXPECT().ReadFile(configAt).Return(configured, nil).AnyTimes()
 	return tool, mock
@@ -403,7 +407,7 @@ func TestMain(suite *testing.M) {
 
 // configAt is the path the mock machine gives for demo's config. It is
 // relative, so it names no machine.
-const configAt = "demo/.config/demo/config"
+const configAt = "home/.config/pzm/config"
 
 // withConfig is a tool on a mock machine whose config holds body. The
 // mock expects the path to be asked for once and the file to be read
@@ -413,7 +417,7 @@ func withConfig(t *testing.T, body string) (*Tool, *MockMachine) {
 	mock := NewMockMachine(gomock.NewController(t))
 	tool := New("demo", "a tool for testing pzm", "", "", "", "")
 	tool.machine = mock
-	mock.EXPECT().ConfigPath("demo").Return(configAt, nil)
+	mock.EXPECT().ConfigPath().Return(configAt, nil)
 	mock.EXPECT().ReadFile(configAt).Return([]byte(body), nil)
 	return tool, mock
 }
@@ -466,7 +470,7 @@ func TestWithNoConfigNoSignerIsSetAndNothingIsClaimed(t *testing.T) {
 	mock := NewMockMachine(gomock.NewController(t))
 	tool := New("demo", "a tool for testing pzm", "", "", "", "")
 	tool.machine = mock
-	mock.EXPECT().ConfigPath("demo").Return(configAt, nil)
+	mock.EXPECT().ConfigPath().Return(configAt, nil)
 	mock.EXPECT().ReadFile(configAt).Return(nil, os.ErrNotExist)
 	code, out, errs := runWho(tool)
 	if code != exitOK || errs != "" ||
@@ -564,7 +568,7 @@ func TestAConfigThatCannotBeReachedIsRefused(t *testing.T) {
 	mock := NewMockMachine(gomock.NewController(t))
 	tool := New("demo", "a tool for testing pzm", "", "", "", "")
 	tool.machine = mock
-	mock.EXPECT().ConfigPath("demo").Return("", errors.New("no home"))
+	mock.EXPECT().ConfigPath().Return("", errors.New("no home"))
 	if code, _, errs := runWho(tool); code != exitRefused ||
 		!strings.Contains(errs, "no home") {
 		t.Errorf("code %d, errs %q", code, errs)
@@ -572,7 +576,7 @@ func TestAConfigThatCannotBeReachedIsRefused(t *testing.T) {
 	mock = NewMockMachine(gomock.NewController(t))
 	tool = New("demo", "a tool for testing pzm", "", "", "", "")
 	tool.machine = mock
-	mock.EXPECT().ConfigPath("demo").Return(configAt, nil)
+	mock.EXPECT().ConfigPath().Return(configAt, nil)
 	mock.EXPECT().ReadFile(configAt).Return(nil, os.ErrPermission)
 	if code, _, errs := runWho(tool); code != exitRefused ||
 		!strings.Contains(errs, "permission") {
@@ -709,5 +713,83 @@ func TestSignedByWithARefusedConfigClaimsNoSigner(t *testing.T) {
 	if err == nil || got.signer != "" || got.unset ||
 		!strings.Contains(err.Error(), configAt+":1:") {
 		t.Errorf("got %+v, %v", got, err)
+	}
+}
+
+// foreign is a tool's own config as game keeps one: lines pzm does not
+// know, and a help-width that would be refused if pzm read it.
+const foreign = "author ada\nlint on\nproject x {\n}\nhelp-width 0\n"
+
+// Anti-test: a tool's own config, full of lines that are not pzm's,
+// changes nothing and is never read. The machine is asked for pzm's
+// file only; a read of any other path fails the mock.
+func TestAToolsOwnConfigIsNeverRead(t *testing.T) {
+	toolsOwn := filepath.Join(os.TempDir(), "home/.config/demo/config")
+	mock := NewMockMachine(gomock.NewController(t))
+	tool := New("demo", "a tool for testing pzm", "", "", "", "")
+	tool.machine = mock
+	mock.EXPECT().ConfigPath().Return(configAt, nil).AnyTimes()
+	mock.EXPECT().ReadFile(configAt).Return(nil, os.ErrNotExist).AnyTimes()
+	mock.EXPECT().ReadFile(toolsOwn).Return([]byte(foreign), nil).Times(none)
+	if err := tool.Check(); err != nil {
+		t.Errorf("check: %v", err)
+	}
+	code, out, errs := runWho(tool)
+	if code != exitOK || !strings.Contains(out, "demo is not signed") ||
+		errs != "" {
+		t.Errorf("code %d, out %q, errs %q", code, out, errs)
+	}
+}
+
+// Anti-test: on the real machine, a tool's config under HOME full of
+// foreign lines changes nothing: --who runs and Check is clean.
+func TestAForeignConfigOnDiskChangesNothing(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	dir := filepath.Join(home, ".config", "demo")
+	if err := os.MkdirAll(dir, dirPerm); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(dir, "config")
+	if err := os.WriteFile(path, []byte(foreign), perm); err != nil {
+		t.Fatal(err)
+	}
+	tool := New("demo", "a tool for testing pzm", "", "", "", "")
+	if err := tool.Check(); err != nil {
+		t.Errorf("check: %v", err)
+	}
+	code, _, errs := runWho(tool)
+	if code != exitOK || errs != "" {
+		t.Errorf("code %d, errs %q", code, errs)
+	}
+}
+
+// pzm's own file on the real machine is ~/.config/pzm/config: a signer
+// there is read, and a bad line there is refused with file and line.
+func TestPzmsOwnFileOnDisk(t *testing.T) {
+	home := t.TempDir()
+	t.Setenv("HOME", home)
+	dir := filepath.Join(home, ".config", "pzm")
+	if err := os.MkdirAll(dir, dirPerm); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(dir, "config")
+	if err := os.WriteFile(path, []byte("help-width 90\nauthor x\n"),
+		perm); err != nil {
+		t.Fatal(err)
+	}
+	tool := New("demo", "a tool for testing pzm", "", "", "", "")
+	err := tool.Check()
+	if err == nil || !strings.Contains(err.Error(), path+":2:") {
+		t.Errorf("check: %v", err)
+	}
+}
+
+// With no pzm file there are the defaults: --who says no signer is set.
+func TestWithNoPzmFileThereAreDefaults(t *testing.T) {
+	t.Setenv("HOME", t.TempDir())
+	tool := New("demo", "a tool for testing pzm", "", "", "", "")
+	if err := tool.Check(); err != nil {
+		t.Errorf("check: %v", err)
 	}
 }

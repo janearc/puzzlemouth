@@ -1,9 +1,14 @@
 # settings a tool's user sets
 
-pzm reads one file for each tool: `~/.config/NAME/config`, where NAME is
-the tool's name. a file that is not there is fine. a file with a line
+pzm has its own file: `~/.config/pzm/config`. it is the only file pzm
+reads for settings, and it is the same for every tool built on pzm.
+
+a file that is not there is fine: the defaults apply. a file with a line
 pzm does not know, or a line wrong in its words, is refused whole. the
 tool says which file and line, and runs nothing.
+
+a tool's own config, `~/.config/NAME/config`, is the tool's alone. pzm
+never opens it, whatever lines it holds.
 
     signer ada :: ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAA...
     help-width 70

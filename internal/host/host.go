@@ -14,9 +14,10 @@ type Machine interface {
 	Executable() (string, error)
 	// IsTerminal is whether the open file descriptor is a terminal.
 	IsTerminal(fd int) bool
-	// ConfigPath is where the named tool's config is kept: the file
-	// ~/.config/NAME/config. It is not made.
-	ConfigPath(tool string) (string, error)
+	// ConfigPath is where pzm keeps its own config: the file
+	// ~/.config/pzm/config. It is not made. No tool's config is pzm's
+	// to open.
+	ConfigPath() (string, error)
 	// ReadFile is the whole of the file at path. A file that is not there
 	// is an error that errors.Is os.ErrNotExist.
 	ReadFile(path string) ([]byte, error)
@@ -34,14 +35,14 @@ func (local) Executable() (string, error) { return os.Executable() }
 // IsTerminal is whether the open file descriptor is a terminal.
 func (local) IsTerminal(fd int) bool { return term.IsTerminal(fd) }
 
-// ConfigPath is ~/.config/NAME/config under the home the environment
+// ConfigPath is ~/.config/pzm/config under the home the environment
 // gives.
-func (local) ConfigPath(tool string) (string, error) {
+func (local) ConfigPath() (string, error) {
 	home, err := os.UserHomeDir()
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(home, ".config", tool, "config"), nil
+	return filepath.Join(home, ".config", "pzm", "config"), nil
 }
 
 // ReadFile is the whole of the file at path.

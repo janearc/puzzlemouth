@@ -77,13 +77,13 @@ func TestTheNullDeviceIsNoTerminal(t *testing.T) {
 	}
 }
 
-// The config of a tool is ~/.config/NAME/config, under the home the
+// pzm's own config is ~/.config/pzm/config, under the home the
 // environment gives.
-func TestTheConfigOfAToolIsUnderTheHomesDotConfig(t *testing.T) {
+func TestPzmsConfigIsUnderTheHomesDotConfig(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
-	got, err := host.NewLocal().ConfigPath("demo")
-	want := filepath.Join(home, ".config", "demo", "config")
+	got, err := host.NewLocal().ConfigPath()
+	want := filepath.Join(home, ".config", "pzm", "config")
 	if err != nil || got != want {
 		t.Errorf("got %q, %v; want %q", got, err, want)
 	}
@@ -93,7 +93,7 @@ func TestTheConfigOfAToolIsUnderTheHomesDotConfig(t *testing.T) {
 // error says so. It does not guess a directory.
 func TestWithNoHomeThereIsNoConfigPath(t *testing.T) {
 	t.Setenv("HOME", "")
-	got, err := host.NewLocal().ConfigPath("demo")
+	got, err := host.NewLocal().ConfigPath()
 	if err == nil || got != "" {
 		t.Errorf("got %q, %v", got, err)
 	}

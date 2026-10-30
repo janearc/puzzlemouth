@@ -12,7 +12,7 @@ import (
 	"github.com/janearc/puzzlemouth/verb"
 )
 
-// The keys of the lines pzm reads from a tool's config, ~/.config/NAME/
+// The keys of the lines pzm reads from its own config, ~/.config/pzm/
 // config. They are lowercase words joined by hyphens, as config wants.
 // firstWord is the place of the one word a line of the config takes. It's
 // defined by declared: each setting takes one.
@@ -27,7 +27,7 @@ const (
 	helpWidthKey = "help-width"
 )
 
-// settings are what a tool's config says to pzm. With no config they are
+// settings are what pzm's own config says. With no config they are
 // the defaults: nobody is vouched for and help is held to the default
 // width.
 type settings struct {
@@ -52,22 +52,22 @@ func declared() []config.Setting {
 	return []config.Setting{signer, width}
 }
 
-// settings is what the tool's config says. It reads the config the
+// settings is what pzm's config says. It reads the config the
 // first time and remembers what it found, or why it could not.
 func (tool *Tool) settings() (settings, error) {
 	if tool.settled == nil {
-		set, err := readSettings(tool.machine, tool.name)
+		set, err := readSettings(tool.machine)
 		tool.settled = &settled{set, err}
 	}
 	return tool.settled.set, tool.settled.err
 }
 
-// readSettings reads the config of the named tool from the machine. A
+// readSettings reads pzm's own config from the machine, never a tool's. A
 // config that is not there is the defaults. One that is there and does
 // not conform is refused whole, every wrong line named by the file and
 // the line.
-func readSettings(machine host.Machine, name verb.Name) (settings, error) {
-	path, err := machine.ConfigPath(string(name))
+func readSettings(machine host.Machine) (settings, error) {
+	path, err := machine.ConfigPath()
 	if err != nil {
 		return settings{}, err
 	}

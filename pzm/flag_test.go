@@ -448,3 +448,13 @@ func TestHelpSaysTheFlags(t *testing.T) {
 		}
 	}
 }
+
+// Anti-test: after a lone --, a word that starts with a hyphen is a word
+// for the verb, and the -- itself is not passed on.
+func TestAHyphenWordAfterTwoHyphensIsAWord(t *testing.T) {
+	tool, seen := importer()
+	code, _, errs := run(tool, "import-agent", "--", "-fast")
+	if code != exitOK || strings.Join(seen.args, " ") != "-fast" {
+		t.Errorf("code %d, errs %q, heard %+v", code, errs, seen)
+	}
+}

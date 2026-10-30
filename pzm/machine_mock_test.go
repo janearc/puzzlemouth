@@ -39,18 +39,18 @@ func (m *MockMachine) EXPECT() *MockMachineMockRecorder {
 }
 
 // ConfigPath mocks base method.
-func (m *MockMachine) ConfigPath(tool string) (string, error) {
+func (m *MockMachine) ConfigPath() (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ConfigPath", tool)
+	ret := m.ctrl.Call(m, "ConfigPath")
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ConfigPath indicates an expected call of ConfigPath.
-func (mr *MockMachineMockRecorder) ConfigPath(tool any) *gomock.Call {
+func (mr *MockMachineMockRecorder) ConfigPath() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ConfigPath", reflect.TypeOf((*MockMachine)(nil).ConfigPath), tool)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ConfigPath", reflect.TypeOf((*MockMachine)(nil).ConfigPath))
 }
 
 // Executable mocks base method.

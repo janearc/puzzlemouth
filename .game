@@ -7,6 +7,9 @@ name puzzlemouth
 # no lint lines, so the rules in ~/.config/game/config apply. a lint
 # line here replaces all of them; add one only with the whole block.
 
+# i am unreasonably chatty
+lint allow README.md words paragraph rows
+
 # REMAINING.md is the working list for the road; it names the people
 # working it and is never in a release, of puzzlemouth or a stack.
 omit REMAINING.md

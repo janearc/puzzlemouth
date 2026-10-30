@@ -34,7 +34,7 @@ func TestWhoSaysTheBuilder(t *testing.T) {
 	want := "demo is not signed\ndemo was built by sid/1a2b3c4d on box\n" +
 		"the last sessions to commit: sid/aaaaaaaa, sid/bbbbbbbb\n" +
 		"no signer is set: no key is vouched for; add a signer line to " +
-		"/pzm-tests-have-no-home/.config/demo/config\n"
+		"/pzm-tests-have-no-home/.config/pzm/config\n"
 	for _, asked := range []string{"--who", "who"} {
 		code, out, errs := run(stamped(), asked)
 		if code != exitOK || out != want {
