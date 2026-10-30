@@ -382,15 +382,57 @@ func TestTheNextBlockMayChooseTabsOrSpacesAgain(t *testing.T) {
 	}
 }
 
-func TestATabMixedWithSpacesInOneIndentIsRefused(t *testing.T) {
-	_, err := readInto(t, projectFile{}, lines("project alpha", " \troad ~/a.git"))
-	refusedAt(t, err, lineTwo, "road")
+// readAlpha reads a file of one project and returns that project.
+func readAlpha(t *testing.T, file ...string) project {
+	t.Helper()
+	got, err := readInto(t, projectFile{}, lines(file...))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return projectsByName(got.Project)["alpha"]
 }
 
-func TestALineThatChangesTheKindOfIndentInsideItsBlockIsRefused(t *testing.T) {
-	file := lines("project alpha", "\troad ~/a.git", "  dist d")
-	_, err := readInto(t, projectFile{}, file)
-	refusedAt(t, err, lineThree, "dist")
+func TestATabMixedWithSpacesInOneIndentIsRead(t *testing.T) {
+	for _, indent := range []string{" \t", "\t ", "  \t  ", "\t\t  "} {
+		alpha := readAlpha(t, "project alpha", indent+"road ~/a.git")
+		if alpha.Road != "~/a.git" {
+			t.Errorf("indent %q: read %+v", indent, alpha)
+		}
+	}
+}
+
+func TestALineThatChangesTheKindOfIndentInsideItsBlockIsRead(t *testing.T) {
+	alpha := readAlpha(t, "project alpha", "\troad ~/a.git", "  dist d")
+	if alpha.Road != "~/a.git" || alpha.Dist != "d" {
+		t.Errorf("read %+v", alpha)
+	}
+}
+
+func TestADistWithATabInABlockOfSpacesIsRead(t *testing.T) {
+	alpha := readAlpha(t, "project alpha", "    road ~/a.git", "\tdist d")
+	if alpha.Road != "~/a.git" || alpha.Dist != "d" {
+		t.Errorf("read %+v", alpha)
+	}
+}
+
+func TestARoadWithSpacesInABlockOfTabsIsRead(t *testing.T) {
+	alpha := readAlpha(t, "project alpha", "\tdist d", "    road ~/a.git")
+	if alpha.Road != "~/a.git" || alpha.Dist != "d" {
+		t.Errorf("read %+v", alpha)
+	}
+}
+
+func TestAMixedBlockOfTabsAndSpacesAndBothIsRead(t *testing.T) {
+	alpha := readAlpha(t, "project alpha", "\troad ~/a.git", "  dist d",
+		" \tset A one", "\t set B two")
+	if alpha.Road != "~/a.git" || alpha.Dist != "d" || len(alpha.Set) != 2 {
+		t.Errorf("read %+v", alpha)
+	}
+}
+
+func TestATabIndentedLineUnderNoBlockIsRefused(t *testing.T) {
+	_, err := readInto(t, projectFile{}, lines("name game", " \troad ~/a.git"))
+	refusedAt(t, err, lineTwo, "road")
 }
 
 func TestAnIndentedLineUnderNoBlockIsRefused(t *testing.T) {

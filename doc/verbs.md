@@ -92,8 +92,8 @@ tool that names one.
 
 - settings are declared like verbs. the file is read in game's format.
   each line is a key and its words. the tail follows ` :: ` with a space
-  on each side. only the first one counts. `#` as the first thing on a
-  line starts a comment. blocks are indented with spaces.
+  on each side. only the first one counts. `#` first on a line starts a
+  comment. a block is indented with spaces, tabs or both.
 - pzm bounces a file that does not conform, whole.
 - every tool has `check-config [FILE]`. it says the file is sound, or it
   lists every bounce by line. it runs nothing and writes nothing.

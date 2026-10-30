@@ -1,5 +1,13 @@
 # changelog
 
+## unreleased
+
+fixed:
+
+- a block's lines may be indented with tabs, spaces or both, as game
+  has always read them; v0.1.2 refused a mix. only an indented line
+  under no block is refused.
+
 ## v0.1.2
 
 added:

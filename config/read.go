@@ -12,13 +12,6 @@ import (
 // divider is what comes between a key's words and its tail.
 const divider = " :: "
 
-// What an indent is made of. An indent of both is mixed.
-const (
-	spaces = "spaces"
-	tabs   = "tabs"
-	mixed  = "both"
-)
-
 // noKey is why a line is refused when nothing it can read as a key comes
 // before its divider. Spaces of another kind can do that.
 const noKey = `there is no key before the "::"`
@@ -37,14 +30,13 @@ type reading struct {
 }
 
 // opened is a block being read: the element its lines fill, the keys
-// they may set, and the kind of indent the block began with.
+// they may set.
 type opened struct {
-	name     string
-	element  reflect.Value
-	keys     []key
-	seen     map[string]bool
-	cleared  map[int]bool
-	indented string
+	name    string
+	element reflect.Value
+	keys    []key
+	seen    map[string]bool
+	cleared map[int]bool
 }
 
 // Read fills into from raw, a file named name in its errors. It refuses
@@ -62,8 +54,8 @@ type opened struct {
 //   - a second line for a scalar key
 //   - an int that is not a whole number
 //   - a tail where the key takes none, or none where it takes one
-//   - an indent of tabs mixed with spaces, a line that changes the kind
-//     of indent inside its block, and an indented line under no block
+//   - an indented line under no block (any indent of spaces, tabs or both
+//     belongs to the block above it)
 //   - an error from a LineSetter
 func (schema Schema[File]) Read(name string, raw []byte, into *File) error {
 	if into == nil {
@@ -84,18 +76,6 @@ func (schema Schema[File]) Read(name string, raw []byte, into *File) error {
 	return nil
 }
 
-// indentKind is what an indent is made of: spaces or tabs, or mixed when
-// it has both.
-func indentKind(indent string) string {
-	switch {
-	case strings.Contains(indent, "\t") && strings.Contains(indent, " "):
-		return mixed
-	case strings.Contains(indent, "\t"):
-		return tabs
-	}
-	return spaces
-}
-
 // line reads one line: a comment or a blank, a key, or a key inside the
 // block above it.
 func (file *reading) line(at int, text string) {
@@ -103,20 +83,15 @@ func (file *reading) line(at int, text string) {
 	if strings.TrimSpace(trimmed) == "" || strings.HasPrefix(trimmed, "#") {
 		return
 	}
-	indent := text[:len(text)-len(trimmed)]
-	kind := indentKind(indent)
 	switch {
-	case kind == mixed:
-		file.refuse(at, firstWord(trimmed), "it is indented with both "+
-			"tabs and spaces; use one or the other")
-	case indent == "":
+	case trimmed == text:
 		file.open = nil
 		file.top(at, trimmed)
 	case file.open == nil:
 		file.refuse(at, firstWord(trimmed), "it is indented, but "+
 			"under no block")
 	default:
-		file.inside(at, trimmed, kind)
+		file.inside(at, trimmed)
 	}
 }
 
@@ -182,17 +157,8 @@ func (file *reading) begin(at int, each key, field reflect.Value,
 }
 
 // inside reads a line indented under the open block.
-func (file *reading) inside(at int, text, kind string) {
+func (file *reading) inside(at int, text string) {
 	block := file.open
-	if block.indented == "" {
-		block.indented = kind
-	}
-	if kind != block.indented {
-		file.refuse(at, firstWord(text), fmt.Sprintf("it is indented "+
-			"with %s, but this block is indented with %s", kind,
-			block.indented))
-		return
-	}
 	each, line, ok := file.parse(at, text, block.keys, block.name)
 	if !ok {
 		return

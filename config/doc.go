@@ -24,10 +24,9 @@
 // reason can hold anything, :: too. An empty tail is refused as a
 // missing one. For any key that takes no tail, "::" is a word.
 //
-// A block is indented with spaces or with tabs, one way for the whole
-// block; the next block may choose again. A tab mixed with spaces in
-// one indent is refused, and so is a line that changes kind inside its
-// block. How wide the indent is does not matter.
+// Any leading whitespace, spaces, tabs or a mix of both, of any width,
+// makes a line indented, and it belongs to the block above it. The kind
+// of indent is not checked. An indented line under no block is refused.
 //
 // Every key is declared. A file that does not conform is refused whole,
 // every wrong line named by its file, line and key as "file:line: key:
